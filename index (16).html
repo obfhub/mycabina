@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyCabina — Cabină Foto Profesională</title>
+  <meta name="description" content="MyCabina – cabina foto cu asistență permanentă, print instant în 14 secunde, accesorii haioase și amintiri de neuitat pentru evenimentul tău." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brown: #7c501a;
+      --brown-light: #a06a2a;
+      --brown-pale: #e8d5b8;
+      --cream: #faf6f0;
+      --cream-dark: #f0e8da;
+      --ink: #1c1710;
+      --ink-mid: #4a3f32;
+      --ink-soft: #8a7a68;
+      --white: #ffffff;
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ── GRAIN OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.35;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 3rem;
+      transition: background 0.4s, backdrop-filter 0.4s, box-shadow 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(250, 246, 240, 0.88);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 rgba(124, 80, 26, 0.12);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+    .nav-logo img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+    }
+    .nav-logo span {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: var(--brown);
+      letter-spacing: 0.04em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.82rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-mid);
+      transition: color 0.25s;
+    }
+    .nav-links a:hover { color: var(--brown); }
+
+    .nav-cta {
+      background: var(--brown);
+      color: var(--white) !important;
+      padding: 0.55rem 1.4rem;
+      border-radius: 2px;
+    }
+    .nav-cta:hover { background: var(--brown-light); color: var(--white) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .hero-text {
+      padding: 8rem 4rem 4rem 3rem;
+      animation: fadeUp 1s ease both;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown);
+      border-bottom: 1px solid var(--brown-pale);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .hero-title {
+      font-family: var(--serif);
+      font-size: clamp(3.2rem, 5.5vw, 5.5rem);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--ink);
+      margin-bottom: 1.6rem;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--brown);
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--ink-mid);
+      max-width: 42ch;
+      margin-bottom: 2.8rem;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1.2rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--brown);
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.9rem 2rem;
+      border-radius: 2px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .btn-primary:hover { background: var(--brown-light); transform: translateY(-1px); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--brown);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 2px;
+      transition: color 0.25s, gap 0.25s;
+    }
+    .btn-ghost:hover { gap: 0.7rem; }
+
+    .hero-image {
+      height: 100dvh;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 1.2s ease both 0.3s;
+    }
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, var(--cream) 0%, transparent 18%);
+    }
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      background: var(--ink);
+      color: var(--cream);
+      display: flex;
+      align-items: stretch;
+    }
+    .stat {
+      flex: 1;
+      padding: 2rem 2.5rem;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-number {
+      font-family: var(--serif);
+      font-size: 2.8rem;
+      font-weight: 300;
+      color: var(--brown-pale);
+      display: block;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-top: 0.4rem;
+      display: block;
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 7rem 3rem; }
+
+    .section-tag {
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--brown);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(2.4rem, 4vw, 3.8rem);
+      font-weight: 300;
+      line-height: 1.12;
+      color: var(--ink);
+    }
+    .section-title em { font-style: italic; color: var(--brown); }
+
+    /* ── FEATURES ── */
+    .features {
+      background: var(--white);
+    }
+    .features-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .features-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2rem;
+      margin-bottom: 5rem;
+    }
+    .features-header .section-title { max-width: 16ch; }
+    .features-intro {
+      max-width: 38ch;
+      color: var(--ink-mid);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      font-weight: 300;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+
+    .feature-card {
+      background: var(--cream);
+      padding: 2.8rem 2.4rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .feature-card:hover { background: var(--cream-dark); }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 0;
+      background: var(--brown);
+      transition: height 0.4s ease;
+    }
+    .feature-card:hover::before { height: 100%; }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      margin-bottom: 1.6rem;
+      color: var(--brown);
+    }
+
+    .feature-name {
+      font-family: var(--serif);
+      font-size: 1.4rem;
+      font-weight: 500;
+      margin-bottom: 0.8rem;
+      color: var(--ink);
+    }
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ── PRICING ── */
+    .pricing {
+      background: var(--ink);
+      color: var(--cream);
+    }
+    .pricing-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    .pricing-header .section-title { color: var(--cream); }
+    .pricing-header .section-title em { color: var(--brown-pale); }
+    .pricing-header .section-tag { color: var(--brown-pale); opacity: 0.7; }
+    .pricing-sub {
+      font-size: 0.93rem;
+      color: var(--ink-soft);
+      margin-top: 1rem;
+      font-weight: 300;
+    }
+
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 2rem;
+    }
+
+    .price-card {
+      background: rgba(255,255,255,0.03);
+      padding: 3rem 2.5rem;
+      position: relative;
+      transition: background 0.3s;
+    }
+    .price-card:hover { background: rgba(255,255,255,0.07); }
+    .price-card.featured {
+      background: var(--brown);
+    }
+    .price-card.featured:hover { background: var(--brown-light); }
+
+    .price-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: var(--brown-pale);
+      color: var(--ink);
+      padding: 0.3rem 0.8rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+    .price-card.featured .price-badge {
+      background: rgba(255,255,255,0.25);
+      color: var(--white);
+    }
+
+    .price-duration {
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      font-weight: 300;
+      color: var(--ink-soft);
+      margin-bottom: 0.5rem;
+    }
+    .price-card.featured .price-duration { color: rgba(255,255,255,0.7); }
+
+    .price-amount {
+      font-family: var(--serif);
+      font-size: 3.8rem;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--cream);
+      margin-bottom: 0.3rem;
+    }
+    .price-amount sup {
+      font-size: 1.4rem;
+      vertical-align: top;
+      margin-top: 0.6rem;
+      margin-right: 0.2rem;
+    }
+    .price-card.featured .price-amount { color: var(--white); }
+
+    .price-divider {
+      width: 32px;
+      height: 1px;
+      background: rgba(255,255,255,0.15);
+      margin: 1.8rem 0;
+    }
+    .price-card.featured .price-divider { background: rgba(255,255,255,0.35); }
+
+    .price-includes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .price-includes li {
+      font-size: 0.85rem;
+      color: rgba(250, 246, 240, 0.55);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 300;
+    }
+    .price-card.featured .price-includes li { color: rgba(255,255,255,0.8); }
+    .price-includes li::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--brown-pale);
+      flex-shrink: 0;
+    }
+    .price-card.featured .price-includes li::before { background: rgba(255,255,255,0.5); }
+
+    .pricing-extra {
+      text-align: center;
+      padding: 1.8rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+    .pricing-extra strong { color: var(--brown-pale); font-weight: 500; }
+
+    /* ── SPECIAL OFFER ── */
+    .pricing-special {
+      margin-top: 1px;
+      background: linear-gradient(135deg, rgba(124,80,26,0.18) 0%, rgba(124,80,26,0.06) 100%);
+      border: 1px solid rgba(124,80,26,0.35);
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 2rem;
+      align-items: center;
+      padding: 2.8rem 3rem;
+      margin-bottom: 1px;
+      position: relative;
+      overflow: hidden;
+    }
+    .pricing-special::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--brown-pale), var(--brown));
+    }
+    .special-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown-pale);
+      margin-bottom: 0.7rem;
+    }
+    .special-title {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--cream);
+      line-height: 1.1;
+    }
+    .special-title em { font-style: italic; color: var(--brown-pale); }
+    .special-desc {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      line-height: 1.7;
+      margin-top: 0.7rem;
+      font-weight: 300;
+      max-width: 38ch;
+    }
+    .special-includes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 1.5rem;
+    }
+    .special-includes span {
+      font-size: 0.8rem;
+      color: rgba(250,246,240,0.55);
+      font-weight: 300;
+    }
+    .special-price-block {
+      text-align: center;
+      padding-left: 2rem;
+      border-left: 1px solid rgba(255,255,255,0.08);
+    }
+    .special-amount {
+      font-family: var(--serif);
+      font-size: 4.2rem;
+      font-weight: 300;
+      color: var(--cream);
+      line-height: 1;
+      margin-bottom: 1.2rem;
+    }
+    .special-amount sup {
+      font-size: 1.5rem;
+      vertical-align: top;
+      margin-top: 0.7rem;
+      margin-right: 0.2rem;
+    }
+    .special-cta {
+      display: inline-block;
+      background: var(--brown-pale);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.75rem 1.6rem;
+      border-radius: 2px;
+      white-space: nowrap;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .special-cta:hover { background: #f5e8d0; transform: translateY(-1px); }
+
+    /* ── GALLERY STRIP ── */
+    .gallery-strip {
+      background: var(--cream-dark);
+      padding: 5rem 0;
+      overflow: hidden;
+    }
+    .gallery-strip-inner {
+      padding: 0 3rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .gallery-hint {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown);
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .gallery-mosaic {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 300px;
+      gap: 3px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mosaic-cell {
+      background: var(--brown-pale);
+      position: relative;
+      overflow: hidden;
+    }
+    .mosaic-cell:first-child { grid-row: span 1; }
+    .mosaic-cell-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, var(--brown-pale) 0%, var(--cream-dark) 100%);
+    }
+    .mosaic-cell-placeholder svg {
+      width: 32px;
+      height: 32px;
+      color: var(--brown);
+      opacity: 0.4;
+    }
+    .mosaic-cell-placeholder span {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--brown);
+      opacity: 0.4;
+    }
+    .mosaic-cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+    .mosaic-cell:hover img { transform: scale(1.04); }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: var(--cream);
+      text-align: center;
+      padding: 8rem 3rem;
+    }
+    .cta-inner { max-width: 600px; margin: 0 auto; }
+    .cta-section .section-title { margin-bottom: 1.2rem; }
+    .cta-section p {
+      color: var(--ink-mid);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      font-weight: 300;
+      margin-bottom: 2.5rem;
+    }
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #25D366;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.9rem 2rem;
+      border-radius: 2px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .btn-whatsapp:hover { background: #1ebe5c; transform: translateY(-1px); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      color: var(--ink-soft);
+      padding: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .footer-logo img { width: 28px; filter: brightness(0.7); }
+    .footer-logo span {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      color: var(--cream);
+      opacity: 0.5;
+    }
+    .footer-copy {
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+    }
+    .footer-tagline {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.4rem;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--ink);
+      margin: 5px 0;
+      transition: all 0.3s;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+      .hero-image {
+        height: 55vh;
+        order: -1;
+      }
+      .hero-image::after { display: none; }
+      .hero-text {
+        padding: 3rem 1.5rem 4rem;
+      }
+      .features-header { flex-direction: column; align-items: flex-start; }
+      .features-grid { grid-template-columns: 1fr; gap: 2px; }
+      .pricing-cards { grid-template-columns: 1fr; }
+      .pricing-special { grid-template-columns: 1fr; gap: 1.5rem; }
+      .special-price-block { border-left: none; border-top: 1px solid rgba(255,255,255,0.08); padding-left: 0; padding-top: 1.5rem; }
+      .special-includes { grid-template-columns: 1fr; }
+      .gallery-mosaic { grid-template-columns: 1fr 1fr; grid-template-rows: 200px 200px; }
+      .gallery-mosaic .mosaic-cell:first-child { grid-column: span 2; }
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--cream); padding: 1.5rem; gap: 1.2rem; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+      .nav-links.open { display: flex; }
+      .hamburger { display: block; }
+      section { padding: 4rem 1.5rem; }
+      .stats-strip { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ── -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">
+      <img src="./MyCabina.svg" alt="MyCabina logo" />
+      <span>MyCabina</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#features">Servicii</a></li>
+      <li><a href="#pricing">Prețuri</a></li>
+      <li><a href="#contact" class="nav-cta">Rezervă acum</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" aria-label="Hero">
+    <div class="hero-text">
+      <span class="hero-eyebrow">Cabină foto profesională</span>
+      <h1 class="hero-title">Amintiri<br /><em>instant.</em><br />La evenimentul tău.</h1>
+      <p class="hero-subtitle">
+        MyCabina aduce magia fotografiei clasice direct la petrecerea ta — cu print în 14 secunde, accesorii haioase și asistență pe tot parcursul serii.
+      </p>
+      <div class="hero-actions">
+        <a href="#pricing" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Vezi prețurile
+        </a>
+        <a href="#features" class="btn-ghost">
+          Descoperă serviciile
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="hero-image">
+      <img src="./hero.png" alt="Cabina foto MyCabina pe trepied de lemn" />
+    </div>
+  </section>
+
+  <!-- ── STATS STRIP ── -->
+  <div class="stats-strip">
+    <div class="stat reveal">
+      <span class="stat-number">14<span style="font-size:1.4rem">s</span></span>
+      <span class="stat-label">Print instant</span>
+    </div>
+    <div class="stat reveal reveal-delay-1">
+      <span class="stat-number">∞</span>
+      <span class="stat-label">Fotografii nelimitate</span>
+    </div>
+    <div class="stat reveal reveal-delay-2">
+      <span class="stat-number">100<span style="font-size:1.4rem">%</span></span>
+      <span class="stat-label">Asistență pe tot evenimentul</span>
+    </div>
+    <div class="stat reveal reveal-delay-3">
+      <span class="stat-number">1</span>
+      <span class="stat-label">Galerie online privată</span>
+    </div>
+  </div>
+
+  <!-- ── FEATURES ── -->
+  <section class="features" id="features">
+    <div class="features-inner">
+      <div class="features-header reveal">
+        <div>
+          <p class="section-tag">Ce offerim</p>
+          <h2 class="section-title">Tot ce ai nevoie<br /><em>la un eveniment</em></h2>
+        </div>
+        <p class="features-intro">
+          De la primele zâmbete până la ultimul dans, MyCabina e acolo — cu tehnologie de top, accesorii creative și un profesionist dedicat doar evenimentului tău.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Card 1 -->
+        <div class="feature-card reveal">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <h3 class="feature-name">Asistență permanentă</h3>
+          <p class="feature-desc">Un operator dedicat te însoțește pe tot parcursul evenimentului — ghidează invitații și asigură că totul merge perfect.</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="feature-card reveal reveal-delay-1">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M12 12h.01M8 12h.01M16 12h.01"/>
+          </svg>
+          <h3 class="feature-name">Print instant – 14 secunde</h3>
+          <p class="feature-desc">Invitații pleacă acasă cu o amintire fizică, imprimată în mai puțin de 14 secunde direct din cabină.</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="feature-card reveal reveal-delay-2">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+          </svg>
+          <h3 class="feature-name">Accesorii haioase</h3>
+          <p class="feature-desc">O colecție bogată de pălării, ochelari, rame și alte obiecte amuzante — pentru poze memorabile și momente de neuitat.</p>
+        </div>
+        <!-- Card 4 -->
+        <div class="feature-card reveal reveal-delay-1">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <h3 class="feature-name">Design personalizat</h3>
+          <p class="feature-desc">Fiecare fotografie are un design unic — numele evenimentului, data, culorile tale. Un cadou cu adevărat personal.</p>
+        </div>
+        <!-- Card 5 -->
+        <div class="feature-card reveal reveal-delay-2">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <h3 class="feature-name">Fotografii nelimitate</h3>
+          <p class="feature-desc">Fără limite, fără restricții. Toți invitații pot face câte poze doresc pe durata întregului eveniment.</p>
+        </div>
+        <!-- Card 6 -->
+        <div class="feature-card reveal reveal-delay-3">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+          </svg>
+          <h3 class="feature-name">Album foto + Galerie online</h3>
+          <p class="feature-desc">La finalul serii primești un album foto personalizat și acces la o galerie online privată cu toate fotografiile evenimentului.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRICING ── -->
+  <section class="pricing" id="pricing">
+    <div class="pricing-inner">
+      <div class="pricing-header reveal">
+        <p class="section-tag">Prețuri transparente</p>
+        <h2 class="section-title">Alege <em>pachetul</em> tău</h2>
+        <p class="pricing-sub">Toate pachetele includ asistență, print instant, accesorii, design personalizat, fotografii nelimitate, album și galerie online.</p>
+      </div>
+
+      <div class="pricing-cards">
+        <!-- 1h — Petrecere -->
+        <div class="price-card reveal">
+          <span class="price-badge">Petrecere</span>
+          <p class="price-duration">1 oră</p>
+          <div class="price-amount"><sup>€</sup>180</div>
+          <div class="price-divider"></div>
+          <ul class="price-includes">
+            <li>Asistență pe toată durata</li>
+            <li>Print instant — 14 secunde</li>
+            <li>Accesorii incluse</li>
+            <li>Design personalizat</li>
+            <li>Fotografii nelimitate</li>
+            <li>Album foto + galerie online</li>
+          </ul>
+        </div>
+        <!-- 2h — Nuntă -->
+        <div class="price-card featured reveal reveal-delay-1">
+          <span class="price-badge">Nuntă</span>
+          <p class="price-duration">2 ore</p>
+          <div class="price-amount"><sup>€</sup>250</div>
+          <div class="price-divider"></div>
+          <ul class="price-includes">
+            <li>Asistență pe toată durata</li>
+            <li>Print instant — 14 secunde</li>
+            <li>Accesorii incluse</li>
+            <li>Design personalizat</li>
+            <li>Fotografii nelimitate</li>
+            <li>Album foto + galerie online</li>
+          </ul>
+        </div>
+        <!-- 3h — Botez -->
+        <div class="price-card reveal reveal-delay-2">
+          <span class="price-badge">Botez</span>
+          <p class="price-duration">3 ore</p>
+          <div class="price-amount"><sup>€</sup>320</div>
+          <div class="price-divider"></div>
+          <ul class="price-includes">
+            <li>Asistență pe toată durata</li>
+            <li>Print instant — 14 secunde</li>
+            <li>Accesorii incluse</li>
+            <li>Design personalizat</li>
+            <li>Fotografii nelimitate</li>
+            <li>Album foto + galerie online</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 5h — Ofertă Specială -->
+      <div class="pricing-special reveal">
+        <div class="special-left">
+          <span class="special-tag">★ Ofertă specială</span>
+          <div class="special-title">Eveniment <em>complet</em> — 5 ore</div>
+          <p class="special-desc">Cel mai bun raport calitate-preț pentru evenimente mari. Toată seara, toți invitații, amintiri nelimitate.</p>
+        </div>
+        <div class="special-right">
+          <div class="special-includes">
+            <span>✓ Asistență permanentă</span>
+            <span>✓ Print instant 14s</span>
+            <span>✓ Accesorii incluse</span>
+            <span>✓ Design personalizat</span>
+            <span>✓ Fotografii nelimitate</span>
+            <span>✓ Album foto + galerie online</span>
+          </div>
+        </div>
+        <div class="special-price-block">
+          <div class="special-amount"><sup>€</sup>420</div>
+          <a href="#contact" class="special-cta">Rezervă acum</a>
+        </div>
+      </div>
+
+      <div class="pricing-extra reveal">
+        Oră suplimentară în timpul evenimentului: <strong>+70€</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── GALLERY STRIP ── -->
+  <div class="gallery-strip">
+    <div class="gallery-strip-inner">
+      <p class="gallery-hint">Galerie — amintiri reale</p>
+      <div class="gallery-mosaic">
+        <div class="mosaic-cell">
+          <img src="./hero.png" alt="Cabina foto MyCabina" />
+        </div>
+        <div class="mosaic-cell">
+          <div class="mosaic-cell-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>Foto invitat</span>
+          </div>
+        </div>
+        <div class="mosaic-cell">
+          <div class="mosaic-cell-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>Foto invitat</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CTA ── -->
+  <section class="cta-section" id="contact">
+    <div class="cta-inner">
+      <p class="section-tag reveal">Rezervă acum</p>
+      <h2 class="section-title reveal">Gata să creăm<br /><em>amintiri?</em></h2>
+      <p class="reveal reveal-delay-1">
+        Scrie-ne astăzi pentru a verifica disponibilitatea datei tale și pentru a discuta detaliile evenimentului. Răspundem rapid!
+      </p>
+      <div class="cta-buttons reveal reveal-delay-2">
+        <a href="https://wa.me/37300000000" class="btn-whatsapp" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.122.557 4.112 1.528 5.836L.057 23.928a.5.5 0 0 0 .621.601l6.243-1.633A11.935 11.935 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.099-1.404l-.364-.215-3.765.984.998-3.657-.236-.376A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          WhatsApp
+        </a>
+        <a href="mailto:contact@mycabina.ro" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div class="footer-logo">
+      <img src="./MyCabina.svg" alt="MyCabina" />
+      <span>MyCabina</span>
+    </div>
+    <span class="footer-tagline">Amintiri instant, pentru totdeauna.</span>
+    <span class="footer-copy">© 2025 MyCabina. Toate drepturile rezervate.</span>
+  </footer>
+
+  <script>
+    // Sticky nav
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Hamburger
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('navLinks');
+    hamburger.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+    });
+    navLinks.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => navLinks.classList.remove('open'));
+    });
+
+    // Reveal on scroll
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

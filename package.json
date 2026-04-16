@@ -1,0 +1,14 @@
+{
+  "name": "mycabina",
+  "version": "1.0.0",
+  "description": "MyCabina — Cabină Foto Profesională",
+  "scripts": {
+    "start": "npx serve . -l $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
