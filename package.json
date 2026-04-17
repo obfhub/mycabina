@@ -1,14 +1,12 @@
 {
   "name": "mycabina",
   "version": "1.0.0",
-  "description": "MyCabina — Cabină Foto Profesională",
+  "main": "server.js",
   "scripts": {
-    "start": "npx serve . -l $PORT"
+    "start": "node server.js"
   },
   "dependencies": {
-    "serve": "^14.2.3"
-  },
-  "engines": {
-    "node": ">=18"
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.9"
   }
 }

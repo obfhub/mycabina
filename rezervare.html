@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rezervare — MyCabina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-mid: #4b3a2a;
+      --ink-soft: #8c7a63;
+      --white: #ffffff;
+    }
+
+    nav {
+      position: fixed;
+      top: env(safe-area-inset-top);
+      left: 0;
+      right: 0;
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2.5rem;
+      height: 60px;
+      background: rgba(250, 246, 240, .92);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 1px 0 rgba(124, 80, 26, .12);
+    }
+
+    nav::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: env(safe-area-inset-top);
+      background: var(--cream);
+      z-index: 999;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      height: 150px;
+      width: auto;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      height: 200px;
+      width: auto;
+      display: block;
+      flex-shrink: 0;
+      margin-left: -150px;
+      transform: translateY(-30px);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      font-size: .78rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--ink-mid);
+      transition: color .25s;
+    }
+
+    .nav-links a:hover { color: var(--brown); }
+
+    .nav-cta {
+      background: var(--brown);
+      color: var(--white) !important;
+      padding: .5rem 1.3rem;
+      border-radius: 2px;
+      transition: background .3s;
+    }
+
+    .nav-cta:hover { background: var(--brown-light) !important; }
+
+    .nav-cta-group {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .nav-social {
+      font-size: .7rem;
+      letter-spacing: .1em;
+      text-decoration: none;
+      color: var(--white);
+      border: none;
+      padding: .35rem .55rem;
+      transition: all .25s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-social:hover { opacity: .85; transform: translateY(-1px); }
+
+    .nav-social[title="Instagram"] {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      border-radius: 4px;
+    }
+
+    .nav-social[title="Facebook"] {
+      background: #1877F2;
+      border-radius: 4px;
+    }
+
+    .nav-social[title="WhatsApp"] {
+      background: #25D366;
+      border-radius: 4px;
+    }
+
+    .nav-social svg { width: 15px; height: 15px; }
+
+    .nav-social-always { display: none; }
+
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: .2rem;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: var(--ink);
+      margin: 5px 0;
+      transition: all .3s;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    body {
+      padding-top: calc(60px + env(safe-area-inset-top));
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        top: 0;
+        padding: 0 1rem;
+        padding-top: env(safe-area-inset-top);
+        height: calc(56px + env(safe-area-inset-top));
+        overflow: visible;
+      }
+
+      .logo-icon { height: 80px; }
+      .logo-text { height: 110px; margin-left: -80px; transform: translateY(-16px); }
+
+      .nav-social-always {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-left: auto;
+        margin-right: .5rem;
+      }
+
+      .nav-social-always .nav-social {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 4px;
+      }
+
+      .nav-social-always .nav-social svg { width: 14px; height: 14px; }
+
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(247, 242, 234, .98);
+        backdrop-filter: blur(14px);
+        padding: .8rem 1.2rem 1.6rem;
+        gap: 0;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+        list-style: none;
+      }
+
+      .nav-links.open { display: flex; }
+
+      .nav-links li { border-bottom: 1px solid var(--cream-dark); }
+      .nav-links li:last-child { border-bottom: none; margin-top: .4rem; }
+
+      .nav-links a {
+        display: block;
+        padding: .85rem 0;
+        font-size: .85rem;
+      }
+
+      .nav-cta-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding-top: .4rem;
+      }
+
+      .nav-cta {
+        text-align: center;
+        padding: .85rem 1rem;
+        font-size: .82rem;
+      }
+
+      .nav-cta-group .nav-social { display: none; }
+
+      .hamburger { display: block; flex-shrink: 0; }
+
+      body { padding-top: calc(56px + env(safe-area-inset-top)); }
+    }
+
+    /* ── Section wrapper ── */
+    .booking-section {
+      padding: 7rem 3rem;
+      background: var(--white);
+    }
+
+    .booking-inner {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .booking-intro .section-tag {
+      font-size: .7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--brown);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .booking-intro h2 {
+      font-family: var(--serif);
+      font-size: clamp(2.4rem, 3.5vw, 3.4rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 1.4rem;
+    }
+
+    .booking-intro h2 em { font-style: italic; color: var(--brown); }
+
+    .booking-intro p {
+      font-size: .93rem;
+      line-height: 1.8;
+      color: var(--ink-mid);
+      font-weight: 300;
+      margin-bottom: 2.5rem;
+    }
+
+    .package-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 2.5rem;
+    }
+
+    .pkg {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .9rem 1.2rem;
+      background: var(--cream);
+      border-left: 3px solid transparent;
+      transition: border-color .25s, background .25s;
+      cursor: default;
+    }
+
+    .pkg:hover { background: var(--cream-dark); border-left-color: var(--brown-pale); }
+    .pkg.highlight { border-left-color: var(--brown); background: var(--cream-dark); }
+
+    .pkg-label { font-family: var(--serif); font-size: 1.05rem; font-weight: 500; color: var(--ink); }
+    .pkg-duration { font-size: .75rem; color: var(--ink-soft); margin-top: .1rem; }
+    .pkg-price { font-family: var(--serif); font-size: 1.3rem; font-weight: 300; color: var(--brown); }
+
+    .booking-note {
+      display: flex;
+      align-items: flex-start;
+      gap: .8rem;
+      padding: 1rem 1.2rem;
+      border-left: 3px solid var(--brown);
+      background: var(--cream);
+    }
+
+    .booking-note svg { width: 18px; height: 18px; color: var(--brown); flex-shrink: 0; margin-top: 2px; }
+    .booking-note p { font-size: .82rem; color: var(--ink-mid); line-height: 1.65; font-weight: 300; }
+    .booking-note strong { font-weight: 500; color: var(--ink); }
+
+    .booking-form-wrap { background: var(--cream); padding: 3rem; }
+
+    .form-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 2rem;
+      padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--brown-pale);
+    }
+
+    .form-row { margin-bottom: 1.4rem; }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+    }
+
+    label {
+      display: block;
+      font-size: .72rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: .5rem;
+    }
+
+    label .req { color: var(--brown); margin-left: 2px; }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      border-radius: 0;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: .9rem;
+      font-weight: 300;
+      padding: .75rem 1rem;
+      outline: none;
+      transition: border-color .25s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus, textarea:focus { border-color: var(--brown); }
+    input::placeholder, textarea::placeholder { color: var(--ink-soft); opacity: .6; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c7a63' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    textarea { resize: vertical; min-height: 110px; line-height: 1.65; }
+
+    .package-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .package-option { display: none; }
+
+    .package-option-label {
+      display: flex;
+      flex-direction: column;
+      padding: .9rem 1rem;
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      cursor: pointer;
+      transition: border-color .25s, background .25s;
+      user-select: none;
+    }
+
+    .package-option-label:hover { border-color: var(--brown-pale); }
+    .package-option:checked + .package-option-label {
+      border-color: var(--brown);
+      background: var(--cream);
+    }
+
+    .pkg-opt-name { font-family: var(--serif); font-size: 1rem; font-weight: 500; color: var(--ink); margin-bottom: .15rem; }
+    .pkg-opt-detail { font-size: .75rem; color: var(--ink-soft); font-weight: 300; }
+    .pkg-opt-price { font-family: var(--serif); font-size: 1.1rem; font-weight: 300; color: var(--brown); margin-top: .4rem; }
+
+    .form-submit-wrap {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--cream-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .form-privacy {
+      font-size: .75rem;
+      color: var(--ink-soft);
+      font-weight: 300;
+      max-width: 28ch;
+      line-height: 1.55;
+    }
+
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      background: var(--brown);
+      color: var(--white);
+      border: none;
+      font-family: var(--sans);
+      font-size: .82rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: .95rem 2.2rem;
+      cursor: pointer;
+      border-radius: 0;
+      transition: background .3s, transform .2s;
+    }
+
+    .btn-submit:hover { background: var(--brown-light); transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit svg { width: 14px; height: 14px; }
+
+    .form-success { display: none; text-align: center; padding: 3rem 2rem; }
+    .form-success.visible { display: block; }
+
+    .success-icon {
+      width: 52px;
+      height: 52px;
+      border: 1px solid var(--brown-pale);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+
+    .success-icon svg { width: 22px; height: 22px; color: var(--brown); }
+
+    .success-title {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: .8rem;
+    }
+
+    .success-title em { font-style: italic; color: var(--brown); }
+
+    .success-desc {
+      font-size: .9rem;
+      color: var(--ink-mid);
+      font-weight: 300;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+
+    .success-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: #25D366;
+      color: #fff;
+      text-decoration: none;
+      font-size: .8rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: .8rem 1.6rem;
+      border-radius: 0;
+      transition: background .3s;
+    }
+
+    .success-whatsapp:hover { background: #1ebe5c; }
+    .success-whatsapp svg { width: 16px; height: 16px; }
+
+    @media (max-width: 768px) {
+      .booking-section { padding: 3.5rem 1.2rem; }
+      .booking-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+      .booking-form-wrap { padding: 1.8rem 1.4rem; }
+      .form-row-2 { grid-template-columns: 1fr; gap: 1rem; }
+      .package-options { grid-template-columns: 1fr 1fr; }
+      .form-submit-wrap { flex-direction: column; align-items: stretch; }
+      .form-privacy { max-width: none; }
+      .btn-submit { justify-content: center; }
+    }
+
+    @media (max-width: 420px) {
+      .package-options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav id="navbar">
+  <a href="index.html" class="nav-logo">
+    <img class="logo-icon" src="./doarcabina.svg" alt="MyCabina icon" />
+    <img class="logo-text" src="./mycabinatext.svg" alt="MyCabina" />
+  </a>
+
+  <div class="nav-social-always">
+    <a href="#" class="nav-social" target="_blank" title="Instagram">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    </a>
+    <a href="#" class="nav-social" target="_blank" title="Facebook">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2.5v-2.9h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.7-1.6 1.5v1.8h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
+      </svg>
+    </a>
+    <a href="https://wa.me/37360996464" class="nav-social" target="_blank" title="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.073-1.117l-.292-.174-3.035.862.872-2.965-.19-.304A7.953 7.953 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
+      </svg>
+    </a>
+  </div>
+
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html#features">Servicii</a></li>
+    <li><a href="index.html#pricing">Prețuri</a></li>
+    <li><a href="index.html#faq">FAQ</a></li>
+    <li class="nav-cta-group">
+      <a href="index.html" class="nav-cta">Acasă</a>
+      <a href="#" class="nav-social" target="_blank" title="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </a>
+      <a href="#" class="nav-social" target="_blank" title="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2.5v-2.9h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.7-1.6 1.5v1.8h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
+        </svg>
+      </a>
+      <a href="https://wa.me/37360996464" class="nav-social" target="_blank" title="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.073-1.117l-.292-.174-3.035.862.872-2.965-.19-.304A7.953 7.953 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
+        </svg>
+      </a>
+    </li>
+  </ul>
+
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<section class="booking-section" id="rezervare">
+  <div class="booking-inner">
+
+    <div class="booking-form-wrap">
+      <div id="bookingForm">
+        <p class="form-title">Detalii eveniment</p>
+
+        <form id="rezervareForm" novalidate>
+
+          <div class="form-row-2">
+            <div>
+              <label for="name">Nume complet <span class="req">*</span></label>
+              <input type="text" id="name" name="name" placeholder="Ex. Maria Ionescu" required />
+            </div>
+            <div>
+              <label for="phone">Telefon <span class="req">*</span></label>
+              <input type="tel" id="phone" name="phone" placeholder="Ex. 060 123 456" required />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div>
+              <label for="date">Data evenimentului <span class="req">*</span></label>
+              <input type="date" id="date" name="date" required />
+            </div>
+            <div>
+              <label for="event_type">Tipul evenimentului <span class="req">*</span></label>
+              <select id="event_type" name="event_type" required>
+                <option value="" disabled selected>Alege tipul</option>
+                <option value="nunta">Nuntă</option>
+                <option value="petrecere">Petrecere</option>
+                <option value="corporate">Corporativ</option>
+                <option value="aniversare">Aniversare</option>
+                <option value="altul">Alt eveniment</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div>
+              <label for="location">Localitatea <span class="req">*</span></label>
+              <input type="text" id="location" name="location" placeholder="Ex. Chișinău, Orhei…" required />
+            </div>
+            <div>
+              <label for="guests">Nr. aproximativ de invitați</label>
+              <input type="number" id="guests" name="guests" placeholder="Ex. 80" min="1" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Pachet dorit <span class="req">*</span></label>
+            <div class="package-options">
+
+              <input type="radio" name="package" id="pkg1" value="1ora-180" class="package-option" />
+              <label class="package-option-label" for="pkg1">
+                <span class="pkg-opt-name">1 oră</span>
+                <span class="pkg-opt-price">€180</span>
+              </label>
+
+              <input type="radio" name="package" id="pkg2" value="2ore-250" class="package-option" />
+              <label class="package-option-label" for="pkg2">
+                <span class="pkg-opt-name">2 ore</span>
+                <span class="pkg-opt-price">€250</span>
+              </label>
+
+              <input type="radio" name="package" id="pkg3" value="3ore-320" class="package-option" />
+              <label class="package-option-label" for="pkg3">
+                <span class="pkg-opt-name">3 ore</span>
+                <span class="pkg-opt-price">€320</span>
+              </label>
+
+              <input type="radio" name="package" id="pkg4" value="5ore-420" class="package-option" />
+              <label class="package-option-label" for="pkg4">
+                <span class="pkg-opt-name">5 ore</span>
+                <span class="pkg-opt-price">€420</span>
+              </label>
+
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label for="message">Detalii suplimentare</label>
+            <textarea id="message" name="message" placeholder="Locația exactă, preferințe speciale, întrebări…"></textarea>
+          </div>
+
+          <div class="form-submit-wrap">
+            <p class="form-privacy">Datele tale sunt folosite exclusiv pentru rezervarea evenimentului.</p>
+            <button type="submit" class="btn-submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              Trimite cererea
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="form-success" id="formSuccess">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="success-title">Cerere trimisă <em>cu succes!</em></div>
+        <p class="success-desc">Îți mulțumim! Te contactăm în cel mai scurt timp pentru a confirma disponibilitatea și detaliile evenimentului tău.</p>
+        <a href="https://wa.me/37360996464" class="success-whatsapp" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          </svg>
+          Scrie-ne pe WhatsApp
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('navLinks');
+
+  hamburger.addEventListener('click', () => {
+    const isOpen = navLinks.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+  });
+
+  navLinks.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      navLinks.classList.remove('open');
+      hamburger.classList.remove('open');
+    });
+  });
+</script>
+
+<script>
+  const dateInput = document.getElementById('date');
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.setAttribute('min', today);
+
+  document.getElementById('rezervareForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const name      = document.getElementById('name').value.trim();
+    const phone     = document.getElementById('phone').value.trim();
+    const date      = document.getElementById('date').value;
+    const eventType = document.getElementById('event_type').value;
+    const location  = document.getElementById('location').value.trim();
+    const pkg       = document.querySelector('input[name="package"]:checked');
+
+    // Validate
+    if (!name || !phone || !date || !eventType || !location || !pkg) {
+      [
+        { el: document.getElementById('name'),       val: name },
+        { el: document.getElementById('phone'),      val: phone },
+        { el: document.getElementById('date'),       val: date },
+        { el: document.getElementById('event_type'), val: eventType },
+        { el: document.getElementById('location'),   val: location },
+      ].forEach(({ el, val }) => { el.style.borderColor = val ? '' : '#c0392b'; });
+      if (!pkg) document.querySelectorAll('.package-option-label').forEach(l => l.style.borderColor = '#c0392b');
+      return;
+    }
+
+    document.querySelectorAll('input, select, textarea').forEach(el => el.style.borderColor = '');
+    document.querySelectorAll('.package-option-label').forEach(l => l.style.borderColor = '');
+
+    const submitBtn = document.querySelector('.btn-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Se trimite…';
+
+    try {
+      const res = await fetch('/api/rezervare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          phone,
+          date,
+          eventType,
+          location,
+          guests:  document.getElementById('guests').value,
+          package: pkg.value,
+          message: document.getElementById('message').value.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('bookingForm').style.display = 'none';
+        document.getElementById('formSuccess').classList.add('visible');
+      } else {
+        alert(data.error || 'A apărut o eroare. Încearcă din nou.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Trimite rezervarea';
+      }
+    } catch (err) {
+      alert('Eroare de rețea. Verifică conexiunea și încearcă din nou.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Trimite rezervarea';
+    }
+  });
+
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('input', () => el.style.borderColor = '');
+  });
+  document.querySelectorAll('.package-option').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.package-option-label').forEach(l => l.style.borderColor = '');
+    });
+  });
+</script>
+</body>
+</html>

@@ -2,8 +2,9 @@
 <html lang="ro">
 
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>MyCabina — Cabină Foto Profesională</title>
   <meta name="description"
     content="MyCabina – cabina foto cu asistență permanentă, print instant în 14 secunde, accesorii haioase și amintiri de neuitat pentru evenimentul tău." />
@@ -56,27 +57,35 @@
       z-index: 1000;
       opacity: .35
     }
+nav::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: var(--cream);
+  z-index: 999
+}
+nav {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 60px;
+  transition: background .4s, backdrop-filter .4s, box-shadow .4s
+}
 
-    /* ─── NAV ─── */
-    nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 900;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 2.5rem;
-      height: 60px;
-      transition: background .4s, backdrop-filter .4s, box-shadow .4s
-    }
-
-    nav.scrolled {
-      background: rgba(250, 246, 240, .92);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 1px 0 rgba(124, 80, 26, .12)
-    }
+nav.scrolled {
+  background: rgba(250, 246, 240, .92);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 rgba(124, 80, 26, .12)
+}
 
     .nav-logo {
       display: flex;
@@ -85,21 +94,15 @@
       text-decoration: none
     }
 
-    .logo-icon {
-      height: 150px;
-      width: auto;
-      display: block;
-      flex-shrink: 0
-    }
+.logo-icon {
+  height: 80px;
+}
 
-    .logo-text {
-      height: 200px;
-      width: auto;
-      display: block;
-      flex-shrink: 0;
-      margin-left: -150px;
-      transform: translateY(-30px)
-    }
+.logo-text {
+  height: 110px;
+  margin-left: -80px;
+  transform: translateY(-16px);
+}
 
     .nav-links {
       display: flex;
@@ -140,23 +143,38 @@
       gap: .6rem
     }
 
-    .nav-social {
-      font-size: .7rem;
-      letter-spacing: .1em;
-      text-decoration: none;
-      color: var(--ink-mid);
-      border: 1px solid var(--brown-pale);
-      padding: .35rem .55rem;
-      transition: all .25s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center
-    }
+.nav-social {
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-decoration: none;
+  color: var(--white);
+  border: none;
+  padding: .35rem .55rem;
+  transition: all .25s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center
+}
 
-    .nav-social:hover {
-      color: var(--brown);
-      border-color: var(--brown)
-    }
+.nav-social:hover {
+  opacity: .85;
+  transform: translateY(-1px)
+}
+
+.nav-social[title="Instagram"] {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  border-radius: 4px
+}
+
+.nav-social[title="Facebook"] {
+  background: #1877F2;
+  border-radius: 4px
+}
+
+.nav-social[title="WhatsApp"] {
+  background: #25D366;
+  border-radius: 4px
+}
 
     .nav-social svg {
       width: 15px;
@@ -205,11 +223,6 @@
       align-items: center;
       gap: 0;
       overflow: hidden
-    }
-
-    .hero-text {
-      padding: 8rem 4rem 4rem 3rem;
-      animation: fadeUp 1s ease both
     }
 
     .hero-eyebrow {
@@ -615,6 +628,36 @@
 
     .price-card.featured .price-includes li::before {
       background: rgba(255, 255, 255, .5)
+    }
+
+    .price-btn {
+      display: block;
+      margin-top: 1.8rem;
+      text-align: center;
+      text-decoration: none;
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .75rem 1rem;
+      border: 1px solid rgba(255, 255, 255, .25);
+      color: rgba(250, 246, 240, .75);
+      transition: background .25s, color .25s, border-color .25s
+    }
+
+    .price-btn:hover {
+      background: rgba(255, 255, 255, .1);
+      color: var(--cream);
+      border-color: rgba(255, 255, 255, .5)
+    }
+
+    .price-card.featured .price-btn {
+      border-color: rgba(255, 255, 255, .5);
+      color: var(--white)
+    }
+
+    .price-card.featured .price-btn:hover {
+      background: rgba(255, 255, 255, .2)
     }
 
     .pricing-extra {
@@ -1123,11 +1166,12 @@
     }
 
     .btn-instagram {
-      background: #E1306C
+      backgroun: rgb(221, 42, 123);
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); 
     }
 
     .btn-instagram:hover {
-      background: #c72a5d
+      background: linear-gradient(45deg, #e6683c 0%, #dc2743 25%, #cc2366 50%, #bc1888 75%, #f09433 100%);
     }
 
     .btn-facebook {
@@ -1292,23 +1336,24 @@
     /* ════════════════════════════
        MOBILE  (≤ 768 px)
     ════════════════════════════ */
-    @media (max-width: 768px) {
+@media (max-width: 768px) {
+  nav {
+    top: 0;
+    padding: 0 1rem;
+    padding-top: env(safe-area-inset-top);
+    height: calc(56px + env(safe-area-inset-top));
+    overflow: visible
+  }
 
-      /* ── Navbar ── */
-      nav {
-        padding: 0 1rem;
-        height: 56px
-      }
+.logo-icon {
+  height: 80px
+}
 
-      .logo-icon {
-        height: 110px
-      }
-
-      .logo-text {
-        height: 150px;
-        margin-left: -110px;
-        transform: translateY(-22px)
-      }
+.logo-text {
+  height: 110px;
+  margin-left: -80px;
+  transform: translateY(-16px)
+}
 
       /* Social icons always visible in the bar, between logo and hamburger */
       .nav-social-always {
@@ -1316,9 +1361,7 @@
         align-items: center;
         gap: .4rem;
         margin-left: auto;
-        /* push to the right of the logo */
-        margin-right: .6rem
-          /* gap before hamburger */
+        margin-right: .5rem
       }
 
       .nav-social-always .nav-social {
@@ -1393,29 +1436,31 @@
         flex-shrink: 0
       }
 
-      /* ── Hero ── */
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto
-      }
+.hero {
+  grid-template-columns: 1fr;
+  min-height: auto;
+  display: flex;
+  flex-direction: column
+}
 
-      .hero-image {
-        height: 62vw;
-        min-height: 240px;
-        max-height: 360px;
-        order: -1
-      }
+.hero-image {
+  height: 62vw;
+  min-height: 240px;
+  max-height: 360px;
+  order: -1;
+  background: var(--cream-dark)
+}
 
       .hero-image::after {
         background: linear-gradient(to bottom, transparent 55%, var(--cream) 100%)
       }
 
-      .hero-text {
-        padding: 1.6rem 1.2rem 3rem;
-        animation: none;
-        opacity: 1;
-        transform: none
-      }
+.hero-text {
+  padding: 0.5rem 1.2rem 3rem;
+  animation: none;
+  opacity: 1;
+  transform: none
+}
 
       .hero-eyebrow {
         font-size: .65rem;
@@ -1526,28 +1571,34 @@
         font-size: .9rem
       }
 
-      .features-grid {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 2px;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        padding: 0 1.2rem 1.2rem;
-        scrollbar-width: none;
-        grid-template-columns: unset
-      }
+.features-grid {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  scroll-snap-type: x mandatory;
+  padding: 0 1.2rem;
+  scroll-padding-left: 50%;
+  scroll-padding-right: 50%;
+}
 
-      .features-grid::-webkit-scrollbar {
-        display: none
-      }
+.feature-card {
+  flex: 0 0 85vw;
+  max-width: 300px;
+  scroll-snap-align: center;
+  padding: 2rem 1.5rem;
 
-      .feature-card {
-        flex: 0 0 78vw;
-        max-width: 300px;
-        scroll-snap-align: start;
-        padding: 2rem 1.5rem
-      }
+  filter: blur(2px);
+  opacity: 0.5;
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+}
+
+/* Active (center) card */
+.feature-card.active {
+  filter: blur(0);
+  opacity: 1;
+  transform: scale(1);
+}
 
       .feature-icon {
         width: 36px;
@@ -1596,17 +1647,27 @@
         display: none
       }
 
-      .price-card {
-        flex: 0 0 78vw;
-        max-width: 300px;
-        scroll-snap-align: start;
-        padding: 2rem 1.5rem;
-        border: 1px solid rgba(255, 255, 255, .08)
-      }
+.price-card {
+  flex: 0 0 78vw;
+  max-width: 300px;
+  scroll-snap-align: center;
+  padding: 2rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, .08);
+  filter: blur(2px);
+  opacity: 0.5;
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+}
 
-      .price-card.featured {
-        border-color: var(--brown)
-      }
+.price-card.active {
+  filter: blur(0);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.price-card.featured {
+  border-color: var(--brown)
+}
 
       .price-amount {
         font-size: 3rem
@@ -1669,27 +1730,33 @@
         padding: 3.5rem 1.2rem
       }
 
-      .guestbook-layout {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.8rem;
-        align-items: start
-      }
+.guestbook-layout {
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+.guestbook-visual {
+  margin-top: 1rem;
+}
 
-      .guestbook-img-wrap img {
-        height: 220px
-      }
+.guestbook-img-wrap img {
+  height: 260px;
+  border-radius: 6px;
+}
 
       .guestbook-img-wrap::before,
       .guestbook-img-wrap::after {
         display: none
       }
 
-      .guestbook-badge {
-        left: .5rem;
-        bottom: .5rem;
-        max-width: 150px;
-        padding: .6rem .8rem
-      }
+.guestbook-badge {
+  position: static;
+  margin-top: 1rem;
+  max-width: 100%;
+  padding: .8rem 1rem;
+}
+.guestbook-content {
+  padding-right: 0;
+}
 
       .guestbook-badge p {
         font-size: .8rem
@@ -1714,11 +1781,11 @@
         margin-bottom: 1.2rem
       }
 
-      .guestbook-step {
-        grid-template-columns: 36px 1fr;
-        gap: .8rem;
-        padding: 1rem 0
-      }
+.guestbook-step {
+  grid-template-columns: 36px 1fr;
+  gap: 1rem;
+  padding: 1.2rem 0;
+}
 
       .step-number {
         width: 36px;
@@ -1906,6 +1973,12 @@
             d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2.5v-2.9h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.7-1.6 1.5v1.8h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
         </svg>
       </a>
+      <a href="https://wa.me/37360996464" class="nav-social" target="_blank" title="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.073-1.117l-.292-.174-3.035.862.872-2.965-.19-.304A7.953 7.953 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
+        </svg>
+      </a>
     </div>
 
     <ul class="nav-links" id="navLinks">
@@ -1913,7 +1986,7 @@
       <li><a href="#pricing">Prețuri</a></li>
       <li><a href="#guestbook">Guestbook</a></li>
       <li class="nav-cta-group">
-        <a href="#contact" class="nav-cta">Rezervă acum</a>
+        <a href="rezervare.html" class="nav-cta">Rezervă acum</a>
         <!-- Keep desktop social icons here for desktop layout -->
         <a href="#" class="nav-social" target="_blank" title="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -1926,6 +1999,12 @@
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path
               d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2.5v-2.9h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.7-1.6 1.5v1.8h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
+          </svg>
+        </a>
+        <a href="https://wa.me/37360996464" class="nav-social" target="_blank" title="WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.413A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.073-1.117l-.292-.174-3.035.862.872-2.965-.19-.304A7.953 7.953 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
           </svg>
         </a>
       </li>
@@ -2067,6 +2146,7 @@
             <li>Fotografii nelimitate</li>
             <li>Album foto + galerie online</li>
           </ul>
+          <a href="rezervare.html" class="price-btn">Rezervă acum</a>
         </div>
         <div class="price-card featured reveal reveal-delay-1">
           <span class="price-badge">Nuntă</span>
@@ -2081,6 +2161,7 @@
             <li>Fotografii nelimitate</li>
             <li>Album foto + galerie online</li>
           </ul>
+          <a href="rezervare.html" class="price-btn">Rezervă acum</a>
         </div>
         <div class="price-card reveal reveal-delay-2">
           <span class="price-badge">Botez</span>
@@ -2095,6 +2176,7 @@
             <li>Fotografii nelimitate</li>
             <li>Album foto + galerie online</li>
           </ul>
+          <a href="rezervare.html" class="price-btn">Rezervă acum</a>
         </div>
       </div>
       <div class="pricing-special reveal">
@@ -2146,7 +2228,11 @@
 
   <section class="guestbook" id="guestbook">
     <div class="guestbook-inner">
-      <div class="guestbook-layout">
+ 
+        <div class="guestbook-content">
+          <p class="section-tag reveal">Un cadou de neuitat</p>
+          <h2 class="section-title reveal">Albumul<br /><em>foto</em></h2>
+               <div class="guestbook-layout">
         <div class="guestbook-visual reveal">
           <div class="guestbook-img-wrap">
             <img src="./album.png" alt="Album guestbook MyCabina — poze lipite cu mesaje scrise de mână" />
@@ -2160,9 +2246,6 @@
             <span>— inclus în orice pachet</span>
           </div>
         </div>
-        <div class="guestbook-content">
-          <p class="section-tag reveal">Un cadou de neuitat</p>
-          <h2 class="section-title reveal">Albumul<br /><em>foto</em></h2>
           <p class="guestbook-desc reveal reveal-delay-1">Fiecare invitat își lipește poza printată în albumul-guestbook
             și lasă un mesaj scris de mână. Rezultatul? Un obiect unic, plin de emoție — pe care mirii sau gazdele îl
             păstrează pentru totdeauna.</p>
@@ -2234,13 +2317,7 @@
           </svg>
           Facebook
         </a>
-        <a href="mailto:contact@mycabina.ro" class="btn-primary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16v16H4z" />
-            <polyline points="22,6 12,13 2,6" />
-          </svg>
-          Email
-        </a>
+       
       </div>
     </div>
   </section>
@@ -2320,7 +2397,7 @@
     </div>
     <span class="footer-copy">© 2026 MyCabina. Toate drepturile rezervate.</span>
   </footer>
-
+  
   <script>
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
@@ -2370,6 +2447,46 @@
       });
     });
   </script>
+<script>
+window.addEventListener('load', () => {
+  const cards = document.querySelectorAll('.feature-card');
+  const container = document.querySelector('.features-grid');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        cards.forEach(c => c.classList.remove('active'));
+        entry.target.classList.add('active');
+      }
+    });
+  }, {
+    root: container,
+    threshold: 0.6
+  });
+
+  cards.forEach(card => observer.observe(card));
+});
+</script>
+<script>
+window.addEventListener('load', () => {
+  const pricingCards = document.querySelectorAll('.price-card');
+  const pricingContainer = document.querySelector('.pricing-cards');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        pricingCards.forEach(c => c.classList.remove('active'));
+        entry.target.classList.add('active');
+      }
+    });
+  }, {
+    root: pricingContainer,
+    threshold: 0.6
+  });
+
+  pricingCards.forEach(card => observer.observe(card));
+});
+</script>
 </body>
 
 </html>
