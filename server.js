@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middleware ──────────────────────────────────────────────
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // serve your HTML files from /public
+app.use(express.static(path.join(__dirname))); // serve files from root
 
 // ── Email transporter (Gmail) ───────────────────────────────
 // Set these in Railway → Variables:
@@ -84,7 +84,7 @@ app.post('/api/rezervare', async (req, res) => {
 
 // ── Fallback: serve index.html for any unknown route ────────
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
