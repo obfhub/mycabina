@@ -757,10 +757,14 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Se trimite…';
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch('/api/rezervare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name,
           phone,
@@ -772,6 +776,7 @@
           message: document.getElementById('message').value.trim(),
         }),
       });
+      clearTimeout(timeout);
 
       const data = await res.json();
 
@@ -784,9 +789,14 @@
         submitBtn.innerHTML = 'Trimite rezervarea';
       }
     } catch (err) {
-      alert('Eroare de rețea. Verifică conexiunea și încearcă din nou.');
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        alert('Cererea a durat prea mult. Verifică conexiunea și încearcă din nou.');
+      } else {
+        alert('Eroare de rețea: ' + err.message);
+      }
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Trimite rezervarea';
+      submitBtn.innerHTML = 'Trimite rezervarea';
     }
   });
 

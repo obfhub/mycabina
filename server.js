@@ -14,11 +14,16 @@ app.use(express.static(path.join(__dirname))); // serve files from root
 //   EMAIL_USER  →  your Gmail address  (ex: mycabina@gmail.com)
 //   EMAIL_PASS  →  Gmail App Password  (not your normal password)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 // ── Rezervare endpoint ──────────────────────────────────────
