@@ -779,9 +779,9 @@
         document.getElementById('bookingForm').style.display = 'none';
         document.getElementById('formSuccess').classList.add('visible');
       } else {
-        alert(data.error || 'A apărut o eroare. Încearcă din nou.');
+        alert('Eroare: ' + (data.error || 'A apărut o eroare. Încearcă din nou.'));
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Trimite rezervarea';
+        submitBtn.innerHTML = 'Trimite rezervarea';
       }
     } catch (err) {
       alert('Eroare de rețea. Verifică conexiunea și încearcă din nou.');

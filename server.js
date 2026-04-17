@@ -78,7 +78,7 @@ app.post('/api/rezervare', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Email error:', err);
-    res.status(500).json({ error: 'Eroare la trimitere. Încearcă din nou.' });
+    res.status(500).json({ error: err.message || 'Eroare la trimitere.' });
   }
 });
 
