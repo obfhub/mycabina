@@ -57,6 +57,7 @@
       opacity: .35
     }
 
+    /* ─── NAV ─── */
     nav {
       position: fixed;
       top: 0;
@@ -162,6 +163,11 @@
       height: 15px
     }
 
+    /* Social icons that are always visible on mobile (in the bar itself) */
+    .nav-social-always {
+      display: none
+    }
+
     .hamburger {
       display: none;
       background: none;
@@ -179,6 +185,19 @@
       transition: all .3s
     }
 
+    .hamburger.open span:nth-child(1) {
+      transform: translateY(6.5px) rotate(45deg)
+    }
+
+    .hamburger.open span:nth-child(2) {
+      opacity: 0
+    }
+
+    .hamburger.open span:nth-child(3) {
+      transform: translateY(-6.5px) rotate(-45deg)
+    }
+
+    /* ─── HERO ─── */
     .hero {
       min-height: 100dvh;
       display: grid;
@@ -294,6 +313,7 @@
       object-position: center top
     }
 
+    /* ─── STATS ─── */
     .stats-strip {
       background: var(--ink);
       color: var(--cream);
@@ -355,6 +375,7 @@
       color: var(--brown)
     }
 
+    /* ─── FEATURES ─── */
     .features {
       background: var(--white)
     }
@@ -439,6 +460,7 @@
       font-weight: 300
     }
 
+    /* ─── PRICING ─── */
     .pricing {
       background: var(--ink);
       color: var(--cream)
@@ -603,11 +625,6 @@
       color: var(--ink-soft)
     }
 
-    .pricing-extra strong {
-      color: var(--brown-pale);
-      font-weight: 500
-    }
-
     .pricing-special {
       margin-top: 1px;
       background: linear-gradient(135deg, rgba(124, 80, 26, .18) 0%, rgba(124, 80, 26, .06) 100%);
@@ -717,6 +734,7 @@
       transform: translateY(-1px)
     }
 
+    /* ─── GALLERY ─── */
     .gallery-strip {
       background: var(--cream-dark);
       padding: 5rem 0;
@@ -790,6 +808,7 @@
       transform: scale(1.04)
     }
 
+    /* ─── GUESTBOOK ─── */
     .guestbook {
       background: var(--white);
       padding: 7rem 3rem
@@ -979,6 +998,7 @@
       line-height: 1.55
     }
 
+    /* ─── FAQ ─── */
     .faq {
       background: var(--white);
       padding: 7rem 3rem
@@ -1041,6 +1061,7 @@
       padding-bottom: 1.2rem
     }
 
+    /* ─── CTA ─── */
     .cta-section {
       background: var(--cream);
       text-align: center;
@@ -1117,6 +1138,7 @@
       background: #166fe0
     }
 
+    /* ─── FOOTER ─── */
     footer {
       background: var(--ink);
       color: var(--ink-soft);
@@ -1267,10 +1289,14 @@
       display: none
     }
 
-    /* ════════ MOBILE ════════ */
-    @media(max-width:768px) {
+    /* ════════════════════════════
+       MOBILE  (≤ 768 px)
+    ════════════════════════════ */
+    @media (max-width: 768px) {
+
+      /* ── Navbar ── */
       nav {
-        padding: 0 1.2rem;
+        padding: 0 1rem;
         height: 56px
       }
 
@@ -1284,6 +1310,31 @@
         transform: translateY(-22px)
       }
 
+      /* Social icons always visible in the bar, between logo and hamburger */
+      .nav-social-always {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        margin-left: auto;
+        /* push to the right of the logo */
+        margin-right: .6rem
+          /* gap before hamburger */
+      }
+
+      .nav-social-always .nav-social {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 2px;
+        border-color: rgba(107, 62, 29, .35)
+      }
+
+      .nav-social-always .nav-social svg {
+        width: 14px;
+        height: 14px
+      }
+
+      /* Dropdown menu */
       .nav-links {
         display: none;
         flex-direction: column;
@@ -1293,9 +1344,9 @@
         right: 0;
         background: rgba(247, 242, 234, .98);
         backdrop-filter: blur(14px);
-        padding: 1.5rem 1.2rem 2rem;
+        padding: .8rem 1.2rem 1.6rem;
         gap: 0;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
         list-style: none
       }
 
@@ -1309,59 +1360,58 @@
 
       .nav-links li:last-child {
         border-bottom: none;
-        margin-top: .5rem
+        margin-top: .4rem
       }
 
       .nav-links a {
         display: block;
-        padding: .9rem 0;
+        padding: .85rem 0;
         font-size: .85rem
       }
 
-      /* ── FIX 1: IG + FB icons stay beside each other, never wrap ── */
+      /* "Rezervă" CTA inside the dropdown — full-width, no social icons here */
       .nav-cta-group {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: .5rem;
-        padding-top: .5rem
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding-top: .4rem
       }
 
       .nav-cta {
-        flex: 1;
         text-align: center;
-        padding: .75rem 1rem
+        padding: .85rem 1rem;
+        font-size: .82rem
       }
 
+      /* Hide the social links that were previously inside the dropdown */
       .nav-cta-group .nav-social {
-        flex-shrink: 0;
-        width: 36px;
-        height: 36px;
-        padding: 0
+        display: none
       }
 
       .hamburger {
-        display: block
+        display: block;
+        flex-shrink: 0
       }
 
+      /* ── Hero ── */
       .hero {
         grid-template-columns: 1fr;
         min-height: auto
       }
 
       .hero-image {
-        height: 60vw;
+        height: 62vw;
         min-height: 240px;
-        max-height: 380px;
+        max-height: 360px;
         order: -1
       }
 
       .hero-image::after {
-        background: linear-gradient(to bottom, transparent 60%, var(--cream) 100%)
+        background: linear-gradient(to bottom, transparent 55%, var(--cream) 100%)
       }
 
       .hero-text {
-        padding: 2rem 1.2rem 3.5rem;
+        padding: 1.6rem 1.2rem 3rem;
         animation: none;
         opacity: 1;
         transform: none
@@ -1369,40 +1419,44 @@
 
       .hero-eyebrow {
         font-size: .65rem;
-        margin-bottom: 1.2rem
+        margin-bottom: 1rem
       }
 
       .hero-title {
-        font-size: clamp(2.6rem, 10vw, 3.8rem);
-        margin-bottom: 1.2rem
+        font-size: clamp(2.6rem, 10vw, 3.6rem);
+        margin-bottom: 1rem
       }
 
       .hero-subtitle {
-        font-size: .92rem;
-        margin-bottom: 2rem;
+        font-size: .9rem;
+        margin-bottom: 1.8rem;
         max-width: none
       }
 
       .hero-actions {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: .8rem
       }
 
       .btn-primary {
-        width: 100%;
         justify-content: center;
         padding: 1rem 1.5rem;
         font-size: .85rem
       }
 
+      .btn-ghost {
+        justify-content: center
+      }
+
+      /* ── Stats ── */
       .stats-strip {
         display: grid;
         grid-template-columns: 1fr 1fr
       }
 
       .stat {
-        padding: 1.5rem 1rem;
+        padding: 1.4rem 1rem;
         border-right: 1px solid rgba(255, 255, 255, .08);
         border-bottom: 1px solid rgba(255, 255, 255, .08)
       }
@@ -1424,6 +1478,7 @@
         font-size: .65rem
       }
 
+      /* ── Sections ── */
       section {
         padding: 3.5rem 1.2rem
       }
@@ -1432,7 +1487,7 @@
         font-size: clamp(2rem, 8vw, 3rem)
       }
 
-      /* ── FIX 2: Features — horizontal scroll (same as pricing) ── */
+      /* ── Features — horizontal scroll ── */
       .features {
         padding: 3.5rem 0
       }
@@ -1461,8 +1516,8 @@
       .features-header {
         flex-direction: column;
         align-items: flex-start;
-        margin-bottom: 2rem;
-        gap: 1rem;
+        margin-bottom: 1.8rem;
+        gap: .8rem;
         padding: 0 1.2rem
       }
 
@@ -1504,7 +1559,7 @@
         font-size: 1.25rem
       }
 
-      /* Pricing — horizontal scroll */
+      /* ── Pricing — horizontal scroll ── */
       .pricing {
         padding: 3.5rem 0
       }
@@ -1591,6 +1646,7 @@
         margin: 0 1.2rem
       }
 
+      /* ── Gallery ── */
       .gallery-strip {
         padding: 3rem 0
       }
@@ -1608,7 +1664,7 @@
         grid-column: span 2
       }
 
-      /* ── FIX 3: Guestbook — keep 2 columns on mobile ── */
+      /* ── Guestbook ── */
       .guestbook {
         padding: 3.5rem 1.2rem
       }
@@ -1697,6 +1753,7 @@
         height: 18px
       }
 
+      /* ── FAQ ── */
       .faq {
         padding: 3.5rem 1.2rem
       }
@@ -1706,14 +1763,20 @@
         padding: 1.2rem 0
       }
 
+      /* ── CTA ── */
       .cta-section {
         padding: 4rem 1.2rem
       }
 
       .cta-buttons {
-        flex-direction: column;
-        align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: .7rem
+      }
+
+      /* WhatsApp spans full width on its own row */
+      .cta-buttons .btn-whatsapp {
+        grid-column: 1 / -1
       }
 
       .btn-whatsapp,
@@ -1721,11 +1784,11 @@
       .btn-facebook,
       .btn-primary {
         justify-content: center;
-        width: 100%;
-        padding: 1rem 1.5rem;
-        font-size: .85rem
+        padding: .95rem 1rem;
+        font-size: .82rem
       }
 
+      /* ── Footer ── */
       footer {
         flex-direction: column;
         align-items: center;
@@ -1757,7 +1820,8 @@
       }
     }
 
-    @media(max-width:480px) {
+    /* ── 480 px ── */
+    @media (max-width: 480px) {
       .guestbook-img-wrap img {
         height: 180px
       }
@@ -1771,7 +1835,8 @@
       }
     }
 
-    @media(max-width:380px) {
+    /* ── 380 px ── */
+    @media (max-width: 380px) {
       .hero-title {
         font-size: 2.4rem
       }
@@ -1796,7 +1861,7 @@
         flex: 0 0 86vw
       }
 
-      /* Only stack guestbook on truly tiny screens */
+      /* Stack guestbook only on truly tiny screens */
       .guestbook-layout {
         grid-template-columns: 1fr;
         gap: 2rem
@@ -1804,6 +1869,15 @@
 
       .guestbook-img-wrap img {
         height: 240px
+      }
+
+      /* CTA buttons stack fully */
+      .cta-buttons {
+        grid-template-columns: 1fr
+      }
+
+      .cta-buttons .btn-whatsapp {
+        grid-column: auto
       }
     }
   </style>
@@ -1816,12 +1890,31 @@
       <img class="logo-icon" src="./doarcabina.svg" alt="MyCabina icon" />
       <img class="logo-text" src="./mycabinatext.svg" alt="MyCabina" />
     </a>
+
+    <!-- Social icons always visible on mobile (outside the dropdown) -->
+    <div class="nav-social-always">
+      <a href="#" class="nav-social" target="_blank" title="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      </a>
+      <a href="#" class="nav-social" target="_blank" title="Facebook">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M22 12a10 10 0 1 0-11.5 9.9v-7h-2.5v-2.9h2.5V9.8c0-2.5 1.5-3.9 3.7-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.7-1.6 1.5v1.8h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
+        </svg>
+      </a>
+    </div>
+
     <ul class="nav-links" id="navLinks">
       <li><a href="#features">Servicii</a></li>
       <li><a href="#pricing">Prețuri</a></li>
       <li><a href="#guestbook">Guestbook</a></li>
       <li class="nav-cta-group">
         <a href="#contact" class="nav-cta">Rezervă acum</a>
+        <!-- Keep desktop social icons here for desktop layout -->
         <a href="#" class="nav-social" target="_blank" title="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="3" y="3" width="18" height="18" rx="5" />
@@ -2230,22 +2323,50 @@
 
   <script>
     const navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', () => { navbar.classList.toggle('scrolled', window.scrollY > 40) });
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40)
+    });
+
     const hamburger = document.getElementById('hamburger');
     const navLinks = document.getElementById('navLinks');
-    hamburger.addEventListener('click', () => { navLinks.classList.toggle('open') });
-    navLinks.querySelectorAll('a').forEach(a => { a.addEventListener('click', () => navLinks.classList.remove('open')) });
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+    });
+
+    navLinks.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        hamburger.classList.remove('open');
+      })
+    });
+
     const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target) } }) }, { threshold: 0.1 });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.1 });
     reveals.forEach(el => observer.observe(el));
+
     const faqItems = document.querySelectorAll('.faq-item');
     faqItems.forEach(item => {
       const question = item.querySelector('.faq-question');
       const answer = item.querySelector('.faq-answer');
       question.addEventListener('click', () => {
         const isOpen = item.classList.contains('active');
-        faqItems.forEach(i => { i.classList.remove('active'); i.querySelector('.faq-answer').style.maxHeight = null });
-        if (!isOpen) { item.classList.add('active'); answer.style.maxHeight = answer.scrollHeight + "px" }
+        faqItems.forEach(i => {
+          i.classList.remove('active');
+          i.querySelector('.faq-answer').style.maxHeight = null
+        });
+        if (!isOpen) {
+          item.classList.add('active');
+          answer.style.maxHeight = answer.scrollHeight + "px"
+        }
       });
     });
   </script>
