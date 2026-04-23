@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,10 +10,28 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// ── Resend helper (HTTPS, no SMTP — works on Railway) ───────
-// Railway Variables needed:
-//   RESEND_API_KEY  →  re_xxxxxxxxxxxx   (from resend.com)
-//   EMAIL_TO        →  the email where you want to receive bookings
+// Serve gallery photos as static files
+app.use('/galerii', express.static(path.join(__dirname, 'galerii')));
+
+// ── Helpers ─────────────────────────────────────────────────
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
+
+function isImage(filename) {
+  return IMAGE_EXTS.has(path.extname(filename).toLowerCase());
+}
+
+// Read optional metadata file: galerii/<folder>/meta.json
+// Format: { "title": "Nunta Ana & Ion", "date": "2026-06-14" }
+function readMeta(folder) {
+  try {
+    const metaPath = path.join(__dirname, 'galerii', folder, 'meta.json');
+    return JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+// ── Resend helper ────────────────────────────────────────────
 async function sendEmail(subject, html) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -33,7 +53,85 @@ async function sendEmail(subject, html) {
   return res.json();
 }
 
-// ── Rezervare endpoint ──────────────────────────────────────
+// ── API: Get gallery metadata + photo list ───────────────────
+// GET /api/galerie/:folder
+app.get('/api/galerie/:folder', (req, res) => {
+  const folder = req.params.folder;
+
+  // Security: block path traversal
+  if (folder.includes('..') || folder.includes('/') || folder.includes('\\')) {
+    return res.status(400).json({ error: 'Invalid folder name.' });
+  }
+
+  const galleryDir = path.join(__dirname, 'galerii', folder);
+
+  if (!fs.existsSync(galleryDir) || !fs.statSync(galleryDir).isDirectory()) {
+    return res.status(404).json({ error: 'Gallery not found.' });
+  }
+
+  const meta = readMeta(folder);
+
+  let files;
+  try {
+    files = fs.readdirSync(galleryDir)
+      .filter(f => isImage(f))
+      .sort(); // alphabetical — rename files as 001.jpg, 002.jpg etc for order control
+  } catch {
+    return res.status(500).json({ error: 'Could not read gallery.' });
+  }
+
+  const photos = files.map(f => ({
+    filename: f,
+    url: `/galerii/${encodeURIComponent(folder)}/${encodeURIComponent(f)}`,
+  }));
+
+  res.json({
+    folder,
+    title: meta.title || formatFolderName(folder),
+    eventDate: meta.date || null,
+    photoCount: photos.length,
+    photos,
+  });
+});
+
+// ── API: Download all photos as ZIP ─────────────────────────
+// GET /api/galerie/:folder/download
+app.get('/api/galerie/:folder/download', (req, res) => {
+  const folder = req.params.folder;
+
+  if (folder.includes('..') || folder.includes('/') || folder.includes('\\')) {
+    return res.status(400).send('Invalid folder name.');
+  }
+
+  const galleryDir = path.join(__dirname, 'galerii', folder);
+
+  if (!fs.existsSync(galleryDir)) {
+    return res.status(404).send('Gallery not found.');
+  }
+
+  const files = fs.readdirSync(galleryDir).filter(f => isImage(f));
+
+  if (files.length === 0) {
+    return res.status(404).send('No photos in this gallery.');
+  }
+
+  const meta = readMeta(folder);
+  const zipName = `MyCabina-${folder}.zip`;
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${zipName}"`);
+
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  archive.pipe(res);
+
+  files.forEach(f => {
+    archive.file(path.join(galleryDir, f), { name: f });
+  });
+
+  archive.finalize();
+});
+
+// ── Rezervare endpoint ───────────────────────────────────────
 app.post('/api/rezervare', async (req, res) => {
   const { name, phone, date, eventType, location, guests, package: pkg, message } = req.body;
 
@@ -81,8 +179,23 @@ app.post('/api/rezervare', async (req, res) => {
   }
 });
 
+// ── Gallery page route ────────────────────────────────────────
+// All /galerie/* routes → serve galerie.html (JS handles the rest)
+app.get('/galerie/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'galerie.html'));
+});
+
+// ── Fallback ──────────────────────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// ── Utils ──────────────────────────────────────────────────────
+function formatFolderName(folder) {
+  // "nunta-ana-ion-2026" → "Nunta Ana Ion 2026"
+  return folder
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
 
 app.listen(PORT, () => console.log(`MyCabina running on port ${PORT}`));
