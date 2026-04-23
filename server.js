@@ -493,24 +493,24 @@ function renderLoginPage(eventName, hasError) {
 
 function renderGalleryPage(eventName, images) {
   const displayName = eventName.replace(/[-_]/g, ' ');
-  const imageCards = images.map((src, i) => \`
-    <div class="photo-item" style="animation-delay:\${(i % 20) * 0.04}s" onclick="openLightbox(\${i})">
-      <img src="\${src}" alt="Foto \${i+1}" loading="lazy"/>
+  const imageCards = images.map((src, i) => `
+    <div class="photo-item" style="animation-delay:${(i % 20) * 0.04}s" onclick="openLightbox(${i})">
+      <img src="${src}" alt="Foto ${i+1}" loading="lazy"/>
     </div>
-  \`).join('');
+  `).join('');
 
-  const lightboxImgs = images.map((src, i) => \`
-    <div class="lb-slide" id="lb-\${i}">
-      <img src="\${src}" alt="Foto \${i+1}"/>
+  const lightboxImgs = images.map((src, i) => `
+    <div class="lb-slide" id="lb-${i}">
+      <img src="${src}" alt="Foto ${i+1}"/>
     </div>
-  \`).join('');
+  `).join('');
 
-  return \`<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="ro">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Galerie — \${displayName} | MyCabina</title>
+  <title>Galerie — ${displayName} | MyCabina</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
@@ -736,38 +736,38 @@ function renderGalleryPage(eventName, images) {
 <header>
   <a href="https://mycabina.com" class="header-logo">MyCabina</a>
   <div class="header-right">
-    <span class="photo-count">\${images.length} fotografii</span>
-    <a href="/\${eventName}/logout" class="btn-logout">Ieși</a>
+    <span class="photo-count">${images.length} fotografii</span>
+    <a href="/${eventName}/logout" class="btn-logout">Ieși</a>
   </div>
 </header>
 <div class="gallery-hero">
   <p class="gallery-hero-tag">Galerie privată</p>
-  <h1 class="gallery-hero-title"><em>\${displayName}</em></h1>
+  <h1 class="gallery-hero-title"><em>${displayName}</em></h1>
   <div class="gallery-divider"></div>
   <p class="gallery-hero-sub">Amintirile tale sunt aici. Apasă pe orice fotografie pentru a o vedea mai mare.</p>
 </div>
-\${images.length > 0 ? \`
+${images.length > 0 ? `
 <div class="gallery-grid">
-  \${imageCards}
+  ${imageCards}
 </div>
-\` : \`
+` : `
 <div class="empty-state">
   <h3>Fotografiile vin în curând</h3>
   <p>Pozele de la eveniment vor apărea aici imediat ce sunt procesate.</p>
 </div>
-\`}
+`}
 <div class="lightbox" id="lightbox">
   <button class="lb-close" onclick="closeLightbox()">✕</button>
   <button class="lb-nav lb-prev" onclick="changeSlide(-1)">‹</button>
-  \${lightboxImgs}
+  ${lightboxImgs}
   <button class="lb-nav lb-next" onclick="changeSlide(1)">›</button>
-  <div class="lb-counter" id="lb-counter">1 / \${images.length}</div>
+  <div class="lb-counter" id="lb-counter">1 / ${images.length}</div>
 </div>
 <footer>
   <p class="footer-copy">© 2026 MyCabina. Galerie privată.</p>
 </footer>
 <script>
-  const images = \${JSON.stringify(images)};
+  const images = ${JSON.stringify(images)};
   let current = 0;
   function openLightbox(i) {
     current = i;
@@ -803,7 +803,9 @@ function renderGalleryPage(eventName, images) {
   });
 </script>
 </body>
-</html>\`;
+</html>`;
+
+  return html;
 }
 
 // ── Fallback ──────────────────────────────────────────────────
