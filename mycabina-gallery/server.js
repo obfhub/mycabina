@@ -8,11 +8,14 @@ const PORT = process.env.PORT || 3000;
 const EVENTS_DIR = path.join(__dirname, 'events');
 
 // Supported image extensions
-const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
+const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve event images statically (no auth needed on static route)
+app.use('/photos', express.static(EVENTS_DIR));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'mycabina-secret-2026',
@@ -44,26 +47,10 @@ function getEventPassword(eventDir) {
 function getEventImages(eventDir, eventName) {
   if (!fs.existsSync(eventDir)) return [];
   return fs.readdirSync(eventDir)
-    .filter(f => IMAGE_EXTS.includes(path.extname(f).toLowerCase()))
+    .filter(f => IMAGE_EXTS.includes(path.extname(f).toLowerCase()) && !f.startsWith('.'))
+    .sort()
     .map(f => `/photos/${eventName}/${f}`);
 }
-
-// Serve event photos (protected)
-app.get('/photos/:event/:file', (req, res) => {
-  const { event, file } = req.params;
-  const sessionKey = `auth_${event}`;
-  if (!req.session[sessionKey]) {
-    return res.status(401).send('Unauthorized');
-  }
-  const eventDir = getEventDir(event);
-  const filePath = path.join(eventDir, file);
-  // Security: ensure file is within event dir
-  if (!filePath.startsWith(eventDir)) {
-    return res.status(403).send('Forbidden');
-  }
-  if (!fs.existsSync(filePath)) return res.status(404).send('Not found');
-  res.sendFile(filePath);
-});
 
 // Login POST
 app.post('/:event/login', (req, res) => {
