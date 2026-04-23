@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: mycabina-gallery
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PORT
+        value: 3000
+    disk:
+      name: events
+      mountPath: /opt/render/project/src/events
+      sizeGB: 10
