@@ -17,6 +17,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve event images statically (no auth needed on static route)
 app.use('/photos', express.static(EVENTS_DIR));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', eventDir: EVENTS_DIR });
+});
+
+// Debug: list events
+app.get('/api/events', (req, res) => {
+  if (!fs.existsSync(EVENTS_DIR)) {
+    return res.json({ error: 'Events directory not found', path: EVENTS_DIR });
+  }
+  const events = fs.readdirSync(EVENTS_DIR).filter(f => {
+    return fs.statSync(path.join(EVENTS_DIR, f)).isDirectory();
+  });
+  res.json({ events, eventsDir: EVENTS_DIR });
+});
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'mycabina-secret-2026',
   resave: false,
