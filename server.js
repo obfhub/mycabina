@@ -3,6 +3,7 @@ const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -257,10 +258,419 @@ app.get('/:event/logout', (req, res) => {
   res.redirect(`/${event}`);
 });
 
+// Multer configuration for uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const event = req.body.event || '';
+    const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+    const eventDir = path.join(EVENTS_DIR, safe);
+    cb(null, eventDir);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    const name = path.basename(file.originalname, ext);
+    cb(null, `${name}-${timestamp}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (EVENT_IMAGE_EXTS.includes(path.extname(file.originalname).toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
+});
+
+// Upload endpoint: POST /:event/upload
+app.post('/:event/upload', upload.array('photos', 50), (req, res) => {
+  const event = req.params.event;
+  const password = req.body.password;
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+  const eventDir = getEventDir(safe);
+
+  // Validate event exists
+  if (!fs.existsSync(eventDir)) {
+    return res.status(404).json({ error: 'Event not found' });
+  }
+
+  // Validate password
+  const correctPassword = getEventPassword(eventDir);
+  if (password !== correctPassword) {
+    // Delete uploaded files if password wrong
+    if (req.files) {
+      req.files.forEach(f => fs.unlinkSync(f.path));
+    }
+    return res.status(401).json({ error: 'Invalid password' });
+  }
+
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded' });
+  }
+
+  const uploaded = req.files.map(f => ({
+    filename: f.filename,
+    size: f.size,
+  }));
+
+  res.json({
+    success: true,
+    message: `${req.files.length} photo(s) uploaded`,
+    files: uploaded,
+  });
+});
+
+// Upload page: GET /:event/upload
+app.get('/:event/upload', (req, res) => {
+  const event = req.params.event;
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+  const eventDir = getEventDir(safe);
+
+  if (!fs.existsSync(eventDir)) {
+    return res.status(404).send('Event not found');
+  }
+
+  const displayName = safe.replace(/[-_]/g, ' ');
+  return res.send(renderUploadPage(safe, displayName));
+});
+
+function renderUploadPage(eventName, displayName) {
+  return \`<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Încarcă fotos — \${displayName} | MyCabina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-soft: #8c7a63;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 2rem;
+    }
+    .upload-wrap {
+      width: 100%;
+      max-width: 500px;
+    }
+    .upload-card {
+      background: #fff;
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 4px 32px rgba(107,62,29,.06);
+    }
+    .upload-title {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: 1rem;
+      text-transform: capitalize;
+    }
+    .upload-subtitle {
+      font-size: .85rem;
+      color: var(--ink-soft);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .dropzone {
+      border: 2px dashed var(--brown-pale);
+      border-radius: 4px;
+      padding: 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .3s;
+      margin-bottom: 1.5rem;
+      background: rgba(216,185,138,.08);
+    }
+    .dropzone:hover, .dropzone.active {
+      border-color: var(--brown);
+      background: rgba(216,185,138,.15);
+    }
+    .dropzone-icon {
+      font-size: 2.5rem;
+      margin-bottom: .8rem;
+    }
+    .dropzone-text {
+      font-size: .9rem;
+      color: var(--ink);
+      margin-bottom: .3rem;
+    }
+    .dropzone-hint {
+      font-size: .75rem;
+      color: var(--ink-soft);
+    }
+    .file-input {
+      display: none;
+    }
+    .field-label {
+      display: block;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: .5rem;
+      margin-top: 1.5rem;
+    }
+    .field-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1px solid var(--cream-dark);
+      border-radius: 2px;
+      background: var(--cream);
+      font-family: var(--sans);
+      font-size: .9rem;
+      color: var(--ink);
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: var(--brown-pale);
+      box-shadow: 0 0 0 3px rgba(216,185,138,.2);
+    }
+    .btn-upload {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: .85rem;
+      background: var(--brown);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-family: var(--sans);
+      font-size: .8rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .25s;
+    }
+    .btn-upload:hover { background: var(--brown-light); }
+    .btn-upload:disabled {
+      background: var(--ink-soft);
+      cursor: not-allowed;
+      opacity: .6;
+    }
+    .file-list {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--cream);
+      border-radius: 2px;
+      font-size: .85rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .file-item {
+      padding: .5rem 0;
+      border-bottom: 1px solid var(--cream-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .file-item:last-child {
+      border-bottom: none;
+    }
+    .file-name {
+      color: var(--ink);
+    }
+    .file-remove {
+      color: var(--brown-pale);
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .file-remove:hover {
+      color: var(--brown);
+    }
+    .message {
+      margin-top: 1rem;
+      padding: .75rem 1rem;
+      border-radius: 2px;
+      font-size: .85rem;
+      display: none;
+    }
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+    .uploading {
+      display: none;
+      text-align: center;
+      color: var(--ink-soft);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="upload-wrap">
+    <div class="upload-card">
+      <h1 class="upload-title">\${displayName}</h1>
+      <p class="upload-subtitle">Încarcă fotografiile din evenimentul tău. Drag & drop sau click pentru a selecta.</p>
+
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <div class="dropzone-icon">📸</div>
+          <p class="dropzone-text">Trage imaginile aici</p>
+          <p class="dropzone-hint">sau click pentru a selecta</p>
+        </div>
+
+        <input type="file" id="fileInput" class="file-input" multiple accept="image/*"/>
+
+        <div id="fileList" class="file-list" style="display:none;"></div>
+
+        <label class="field-label" for="password">Parolă eveniment</label>
+        <input type="password" id="password" name="password" class="field-input" placeholder="Introdu parola" required/>
+
+        <button type="submit" class="btn-upload" id="uploadBtn">Încarcă fotografiile</button>
+      </form>
+
+      <div class="uploading" id="uploading">
+        ⏳ Se încarcă... Stai liniștit
+      </div>
+
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const form = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploading = document.getElementById('uploading');
+    const message = document.getElementById('message');
+    let selectedFiles = [];
+
+    // Drag & drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, e => e.preventDefault());
+    });
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropzone.addEventListener(evt, () => dropzone.classList.add('active'));
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, () => dropzone.classList.remove('active'));
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const files = Array.from(e.dataTransfer.files);
+      selectedFiles.push(...files.filter(f => f.type.startsWith('image/')));
+      updateFileList();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      selectedFiles.push(...Array.from(e.target.files));
+      updateFileList();
+    });
+
+    function updateFileList() {
+      if (selectedFiles.length === 0) {
+        fileList.style.display = 'none';
+        return;
+      }
+      fileList.style.display = 'block';
+      fileList.innerHTML = selectedFiles.map((f, i) => \`
+        <div class="file-item">
+          <span class="file-name">\${f.name}</span>
+          <span class="file-remove" onclick="removeFile(\${i})">✕</span>
+        </div>
+      \`).join('');
+    }
+
+    function removeFile(idx) {
+      selectedFiles.splice(idx, 1);
+      updateFileList();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (selectedFiles.length === 0) {
+        showMessage('Selectează cel puțin o imagine', 'error');
+        return;
+      }
+
+      const password = document.getElementById('password').value;
+      if (!password) {
+        showMessage('Introdu parola evenimentului', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      selectedFiles.forEach(f => formData.append('photos', f));
+      formData.append('password', password);
+      formData.append('event', '\${eventName}');
+
+      uploadBtn.disabled = true;
+      uploading.style.display = 'block';
+      message.style.display = 'none';
+
+      try {
+        const res = await fetch('/\${eventName}/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showMessage(\`✓ \${data.message}\`, 'success');
+          selectedFiles = [];
+          updateFileList();
+          fileInput.value = '';
+          setTimeout(() => window.location.href = '/\${eventName}', 2000);
+        } else {
+          showMessage(data.error || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        showMessage(err.message, 'error');
+      } finally {
+        uploadBtn.disabled = false;
+        uploading.style.display = 'none';
+      }
+    });
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = \`message \${type}\`;
+      message.style.display = 'block';
+    }
+  </script>
+</body>
+</html>\`;
+}
+
 // Main event gallery route (but NOT for special routes like /api, /galerie, etc)
 app.get('/:event', (req, res, next) => {
   // Skip if it matches known routes
-  if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook'].includes(req.params.event)) {
+  if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook', 'upload'].includes(req.params.event)) {
     return next();
   }
   
