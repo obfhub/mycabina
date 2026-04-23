@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
@@ -8,10 +9,22 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middleware ──────────────────────────────────────────────
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
 // Serve gallery photos as static files
 app.use('/galerii', express.static(path.join(__dirname, 'galerii')));
+
+// Session middleware (for event galleries)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'mycabina-secret-2026',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 1000 * 60 * 60 * 8 } // 8 hours
+}));
+
+// Serve event images statically
+app.use('/photos', express.static(path.join(__dirname, 'mycabina-gallery', 'events')));
 
 // ── Helpers ─────────────────────────────────────────────────
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
@@ -184,6 +197,614 @@ app.post('/api/rezervare', async (req, res) => {
 app.get('/galerie/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'galerie.html'));
 });
+
+// ─── EVENT GALLERY ROUTES ────────────────────────────────────
+
+const EVENTS_DIR = path.join(__dirname, 'mycabina-gallery', 'events');
+const EVENT_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
+
+function getEventDir(eventName) {
+  const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+  return path.join(EVENTS_DIR, safe);
+}
+
+function getEventPassword(eventDir) {
+  const passFile = path.join(eventDir, 'pass.json');
+  if (!fs.existsSync(passFile)) return null;
+  try {
+    const data = JSON.parse(fs.readFileSync(passFile, 'utf8'));
+    return data.password || null;
+  } catch {
+    return null;
+  }
+}
+
+function getEventImages(eventDir, eventName) {
+  if (!fs.existsSync(eventDir)) return [];
+  return fs.readdirSync(eventDir)
+    .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()) && !f.startsWith('.'))
+    .sort()
+    .map(f => `/photos/${eventName}/${f}`);
+}
+
+// Login POST
+app.post('/:event/login', (req, res) => {
+  const { event } = req.params;
+  const { password } = req.body;
+  const eventDir = getEventDir(event);
+
+  if (!fs.existsSync(eventDir)) {
+    return res.status(404).send('Event not found');
+  }
+
+  const correctPassword = getEventPassword(eventDir);
+  if (!correctPassword) {
+    return res.status(500).send('Password not configured for this event');
+  }
+
+  if (password === correctPassword) {
+    req.session[`auth_${event}`] = true;
+    return res.redirect(`/${event}`);
+  } else {
+    return res.redirect(`/${event}?error=1`);
+  }
+});
+
+// Logout
+app.get('/:event/logout', (req, res) => {
+  const { event } = req.params;
+  req.session[`auth_${event}`] = false;
+  res.redirect(`/${event}`);
+});
+
+// Main event gallery route (but NOT for special routes like /api, /galerie, etc)
+app.get('/:event', (req, res, next) => {
+  // Skip if it matches known routes
+  if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook'].includes(req.params.event)) {
+    return next();
+  }
+  
+  const event = req.params.event;
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+  const eventDir = getEventDir(safe);
+
+  if (!fs.existsSync(eventDir)) {
+    return next(); // Pass to 404 handler
+  }
+
+  const sessionKey = `auth_${safe}`;
+  const isAuthenticated = req.session[sessionKey] === true;
+  const hasError = req.query.error === '1';
+
+  if (!isAuthenticated) {
+    return res.send(renderLoginPage(safe, hasError));
+  }
+
+  const images = getEventImages(eventDir, safe);
+  return res.send(renderGalleryPage(safe, images));
+});
+
+function renderLoginPage(eventName, hasError) {
+  const displayName = eventName.replace(/[-_]/g, ' ');
+  return `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Galerie — ${displayName} | MyCabina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-mid: #4b3a2a;
+      --ink-soft: #8c7a63;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .35;
+    }
+    .login-wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      padding: 2rem;
+      animation: fadeUp .6s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .login-logo a {
+      text-decoration: none;
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--brown);
+      letter-spacing: .04em;
+    }
+    .login-card {
+      background: #fff;
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 2.5rem 2.5rem 2rem;
+      box-shadow: 0 4px 32px rgba(107,62,29,.06);
+    }
+    .event-tag {
+      font-size: .68rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: .5rem;
+    }
+    .login-title {
+      font-family: var(--serif);
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--ink);
+      margin-bottom: .4rem;
+      line-height: 1.2;
+      text-transform: capitalize;
+    }
+    .login-subtitle {
+      font-size: .82rem;
+      color: var(--ink-soft);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .field-label {
+      display: block;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: .5rem;
+    }
+    .field-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1px solid var(--cream-dark);
+      border-radius: 2px;
+      background: var(--cream);
+      font-family: var(--sans);
+      font-size: .9rem;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field-input:focus {
+      border-color: var(--brown-pale);
+      box-shadow: 0 0 0 3px rgba(216,185,138,.2);
+    }
+    .error-msg {
+      margin-top: .75rem;
+      padding: .6rem .9rem;
+      background: #fdf2f2;
+      border: 1px solid #f5c6c6;
+      border-radius: 2px;
+      font-size: .8rem;
+      color: #9b2c2c;
+    }
+    .btn-login {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: .85rem;
+      background: var(--brown);
+      color: #fff;
+      border: none;
+      border-radius: 2px;
+      font-family: var(--sans);
+      font-size: .8rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .25s, transform .15s;
+    }
+    .btn-login:hover { background: var(--brown-light); transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+    .login-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: .75rem;
+      color: var(--ink-soft);
+    }
+    .login-footer a { color: var(--brown); text-decoration: none; }
+    .lock-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      background: var(--cream-dark);
+      border-radius: 50%;
+      margin-bottom: 1.2rem;
+    }
+    .lock-icon svg { width: 20px; height: 20px; stroke: var(--brown); }
+    .divider {
+      width: 32px;
+      height: 1px;
+      background: var(--brown-pale);
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-logo">
+      <a href="https://mycabina.com">MyCabina</a>
+    </div>
+    <div class="login-card">
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <p class="event-tag">Galerie privată</p>
+      <h1 class="login-title">${displayName}</h1>
+      <div class="divider"></div>
+      <p class="login-subtitle">Introdu parola primită pentru a accesa fotografiile evenimentului.</p>
+      <form method="POST" action="/${eventName}/login">
+        <label class="field-label" for="password">Parolă</label>
+        <input class="field-input" type="password" id="password" name="password" placeholder="••••••••" autofocus required/>
+        ${hasError ? '<p class="error-msg">Parolă incorectă. Încearcă din nou.</p>' : ''}
+        <button type="submit" class="btn-login">Accesează galeria</button>
+      </form>
+    </div>
+    <p class="login-footer">
+      Ai probleme? <a href="https://wa.me/37360996464">Contactează-ne</a>
+    </p>
+  </div>
+</body>
+</html>`;
+}
+
+function renderGalleryPage(eventName, images) {
+  const displayName = eventName.replace(/[-_]/g, ' ');
+  const imageCards = images.map((src, i) => \`
+    <div class="photo-item" style="animation-delay:\${(i % 20) * 0.04}s" onclick="openLightbox(\${i})">
+      <img src="\${src}" alt="Foto \${i+1}" loading="lazy"/>
+    </div>
+  \`).join('');
+
+  const lightboxImgs = images.map((src, i) => \`
+    <div class="lb-slide" id="lb-\${i}">
+      <img src="\${src}" alt="Foto \${i+1}"/>
+    </div>
+  \`).join('');
+
+  return \`<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Galerie — \${displayName} | MyCabina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-mid: #4b3a2a;
+      --ink-soft: #8c7a63;
+    }
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100dvh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .35;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(247,242,234,.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--cream-dark);
+      padding: 0 2.5rem;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-logo {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      font-weight: 300;
+      color: var(--brown);
+      text-decoration: none;
+      letter-spacing: .04em;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .photo-count {
+      font-size: .75rem;
+      color: var(--ink-soft);
+      letter-spacing: .05em;
+    }
+    .btn-logout {
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-decoration: none;
+      padding: .35rem .8rem;
+      border: 1px solid var(--cream-dark);
+      border-radius: 2px;
+      transition: all .2s;
+    }
+    .btn-logout:hover { color: var(--brown); border-color: var(--brown-pale); }
+    .gallery-hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 5rem 2rem 3.5rem;
+    }
+    .gallery-hero-tag {
+      font-size: .68rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: .8rem;
+    }
+    .gallery-hero-title {
+      font-family: var(--serif);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 300;
+      color: var(--ink);
+      line-height: 1.1;
+      text-transform: capitalize;
+      margin-bottom: 1rem;
+    }
+    .gallery-hero-title em {
+      font-style: italic;
+      color: var(--brown);
+    }
+    .gallery-divider {
+      width: 48px;
+      height: 1px;
+      background: var(--brown-pale);
+      margin: 0 auto 1.2rem;
+    }
+    .gallery-hero-sub {
+      font-size: .85rem;
+      color: var(--ink-soft);
+      max-width: 360px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .gallery-grid {
+      position: relative;
+      z-index: 1;
+      columns: 4;
+      column-gap: 12px;
+      padding: 0 2.5rem 4rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 1100px) { .gallery-grid { columns: 3; } }
+    @media (max-width: 700px) { .gallery-grid { columns: 2; padding: 0 1rem 3rem; } }
+    @media (max-width: 400px) { .gallery-grid { columns: 1; } }
+    .photo-item {
+      break-inside: avoid;
+      margin-bottom: 12px;
+      cursor: pointer;
+      overflow: hidden;
+      border-radius: 3px;
+      opacity: 0;
+      animation: photoIn .5s ease forwards;
+    }
+    @keyframes photoIn {
+      from { opacity: 0; transform: scale(.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .photo-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform .4s ease, filter .4s ease;
+      filter: brightness(.96);
+    }
+    .photo-item:hover img {
+      transform: scale(1.03);
+      filter: brightness(1.02);
+    }
+    .empty-state {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 5rem 2rem;
+      color: var(--ink-soft);
+    }
+    .empty-state h3 { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; margin-bottom: .5rem; }
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(26,20,14,.95);
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .lightbox.open { display: flex; }
+    .lb-slide { display: none; max-width: 90vw; max-height: 90dvh; }
+    .lb-slide.active { display: flex; align-items: center; justify-content: center; }
+    .lb-slide img { max-width: 90vw; max-height: 90dvh; object-fit: contain; border-radius: 2px; }
+    .lb-close {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: none;
+      border: none;
+      color: rgba(247,242,234,.7);
+      cursor: pointer;
+      padding: .5rem;
+      transition: color .2s;
+    }
+    .lb-close:hover { color: #fff; }
+    .lb-nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(247,242,234,.1);
+      border: 1px solid rgba(247,242,234,.15);
+      border-radius: 2px;
+      color: rgba(247,242,234,.8);
+      cursor: pointer;
+      padding: .8rem .6rem;
+      transition: background .2s, color .2s;
+    }
+    .lb-nav:hover { background: rgba(247,242,234,.2); color: #fff; }
+    .lb-prev { left: 1.5rem; }
+    .lb-next { right: 1.5rem; }
+    .lb-counter {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: .75rem;
+      letter-spacing: .1em;
+      color: rgba(247,242,234,.5);
+    }
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--cream-dark);
+      padding: 2rem 2.5rem;
+      text-align: center;
+    }
+    .footer-copy {
+      font-size: .72rem;
+      color: var(--ink-soft);
+    }
+  </style>
+</head>
+<body>
+<header>
+  <a href="https://mycabina.com" class="header-logo">MyCabina</a>
+  <div class="header-right">
+    <span class="photo-count">\${images.length} fotografii</span>
+    <a href="/\${eventName}/logout" class="btn-logout">Ieși</a>
+  </div>
+</header>
+<div class="gallery-hero">
+  <p class="gallery-hero-tag">Galerie privată</p>
+  <h1 class="gallery-hero-title"><em>\${displayName}</em></h1>
+  <div class="gallery-divider"></div>
+  <p class="gallery-hero-sub">Amintirile tale sunt aici. Apasă pe orice fotografie pentru a o vedea mai mare.</p>
+</div>
+\${images.length > 0 ? \`
+<div class="gallery-grid">
+  \${imageCards}
+</div>
+\` : \`
+<div class="empty-state">
+  <h3>Fotografiile vin în curând</h3>
+  <p>Pozele de la eveniment vor apărea aici imediat ce sunt procesate.</p>
+</div>
+\`}
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-nav lb-prev" onclick="changeSlide(-1)">‹</button>
+  \${lightboxImgs}
+  <button class="lb-nav lb-next" onclick="changeSlide(1)">›</button>
+  <div class="lb-counter" id="lb-counter">1 / \${images.length}</div>
+</div>
+<footer>
+  <p class="footer-copy">© 2026 MyCabina. Galerie privată.</p>
+</footer>
+<script>
+  const images = \${JSON.stringify(images)};
+  let current = 0;
+  function openLightbox(i) {
+    current = i;
+    document.getElementById('lightbox').classList.add('open');
+    updateSlide();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function changeSlide(dir) {
+    current = (current + dir + images.length) % images.length;
+    updateSlide();
+  }
+  function updateSlide() {
+    document.querySelectorAll('.lb-slide').forEach((s, i) => {
+      s.classList.toggle('active', i === current);
+    });
+    document.getElementById('lb-counter').textContent = (current + 1) + ' / ' + images.length;
+  }
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('lightbox').classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') changeSlide(-1);
+    if (e.key === 'ArrowRight') changeSlide(1);
+  });
+  let touchX = 0;
+  document.getElementById('lightbox').addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.getElementById('lightbox').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
+  });
+</script>
+</body>
+</html>\`;
+}
 
 // ── Fallback ──────────────────────────────────────────────────
 app.get('*', (req, res) => {
