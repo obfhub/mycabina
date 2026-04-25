@@ -27,6 +27,48 @@ app.use(session({
 // Serve event images statically
 app.use('/photos', express.static(path.join(__dirname, 'mycabina-gallery', 'events')));
 
+// ── Multer Configuration ────────────────────────────────────
+const uploadDir = path.join(__dirname, 'mycabina-gallery', 'events');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const eventName = req.params.event;
+    const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+    const eventDir = path.join(uploadDir, safe);
+    
+    // Ensure directory exists
+    if (!fs.existsSync(eventDir)) {
+      fs.mkdirSync(eventDir, { recursive: true });
+    }
+    
+    cb(null, eventDir);
+  },
+  filename: (req, file, cb) => {
+    // Keep original filename or generate timestamp-based name
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    const ext = path.extname(file.originalname);
+    cb(null, `${timestamp}-${random}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed: JPG, PNG, GIF, WebP, HEIC, AVIF'));
+    }
+  }
+});
+
 // ── Helpers ─────────────────────────────────────────────────
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 
@@ -199,6 +241,175 @@ app.get('/galerie/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'galerie.html'));
 });
 
+// ─── ADMIN ROUTES ──────────────────────────────────────────────
+
+// Serve admin page
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// Serve upload page
+app.get('/upload.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'upload.html'));
+});
+
+// Serve upload page for specific event
+app.get('/:event/upload', (req, res) => {
+  res.sendFile(path.join(__dirname, 'upload.html'));
+});
+
+// Get all events (API)
+app.get('/api/admin/events', (req, res) => {
+  const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+  
+  if (!fs.existsSync(eventsDir)) {
+    return res.json([]);
+  }
+
+  try {
+    const folders = fs.readdirSync(eventsDir).filter(f => {
+      const fullPath = path.join(eventsDir, f);
+      return fs.statSync(fullPath).isDirectory();
+    });
+
+    const events = folders.map(folder => {
+      const eventDir = path.join(eventsDir, folder);
+      const metaFile = path.join(eventDir, 'meta.json');
+      const passFile = path.join(eventDir, 'pass.json');
+
+      let meta = {};
+      let password = null;
+      let galleryPassword = null;
+
+      try {
+        if (fs.existsSync(metaFile)) {
+          meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+        }
+        if (fs.existsSync(passFile)) {
+          const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
+          password = passData.password || null;
+          galleryPassword = passData.galleryPassword || null;
+        }
+      } catch (e) {
+        // Ignore errors reading metadata
+      }
+
+      const images = fs.readdirSync(eventDir)
+        .filter(f => ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'].includes(path.extname(f).toLowerCase()))
+        .length;
+
+      return {
+        slug: folder,
+        name: meta.name || folder.replace(/[-_]/g, ' '),
+        date: meta.date || null,
+        location: meta.location || null,
+        uploadPassword: password ? '***' : null,
+        galleryPassword: galleryPassword ? '***' : null,
+        photoCount: images,
+      };
+    });
+
+    res.json(events);
+  } catch (err) {
+    console.error('Error reading events:', err);
+    res.status(500).json({ error: 'Failed to read events' });
+  }
+});
+
+// Create new event (API)
+app.post('/api/admin/create-event', (req, res) => {
+  const { name, uploadPassword, galleryPassword, date, location } = req.body;
+
+  if (!name || !uploadPassword) {
+    return res.status(400).json({ error: 'Event name and upload password are required' });
+  }
+
+  // Sanitize event name for folder
+  const slug = name.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
+
+  if (!slug) {
+    return res.status(400).json({ error: 'Invalid event name' });
+  }
+
+  const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+  const eventDir = path.join(eventsDir, slug);
+
+  // Create events directory if it doesn't exist
+  if (!fs.existsSync(eventsDir)) {
+    fs.mkdirSync(eventsDir, { recursive: true });
+  }
+
+  // Check if event already exists
+  if (fs.existsSync(eventDir)) {
+    return res.status(400).json({ error: 'Event already exists' });
+  }
+
+  try {
+    // Create event directory
+    fs.mkdirSync(eventDir, { recursive: true });
+
+    // Save metadata
+    const meta = {
+      name,
+      date: date || null,
+      location: location || null,
+      createdAt: new Date().toISOString(),
+    };
+    fs.writeFileSync(path.join(eventDir, 'meta.json'), JSON.stringify(meta, null, 2));
+
+    // Save passwords
+    const passData = {
+      password: uploadPassword,
+      galleryPassword: galleryPassword || null,
+    };
+    fs.writeFileSync(path.join(eventDir, 'pass.json'), JSON.stringify(passData, null, 2));
+
+    res.json({
+      success: true,
+      slug,
+      name,
+      message: `Event "${name}" created successfully`,
+    });
+  } catch (err) {
+    console.error('Error creating event:', err);
+    res.status(500).json({ error: 'Failed to create event' });
+  }
+});
+
+// Delete event (API)
+app.post('/api/admin/delete-event', (req, res) => {
+  const { slug } = req.body;
+
+  if (!slug) {
+    return res.status(400).json({ error: 'Event slug is required' });
+  }
+
+  // Security: validate slug format
+  if (!/^[a-zA-Z0-9\-_]+$/.test(slug)) {
+    return res.status(400).json({ error: 'Invalid event slug' });
+  }
+
+  const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+  const eventDir = path.join(eventsDir, slug);
+
+  // Security: ensure we're not deleting outside the events directory
+  if (!eventDir.startsWith(eventsDir)) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
+
+  if (!fs.existsSync(eventDir)) {
+    return res.status(404).json({ error: 'Event not found' });
+  }
+
+  try {
+    fs.rmSync(eventDir, { recursive: true, force: true });
+    res.json({ success: true, message: 'Event deleted' });
+  } catch (err) {
+    console.error('Error deleting event:', err);
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
 // ─── EVENT GALLERY ROUTES ────────────────────────────────────
 
 const EVENTS_DIR = path.join(__dirname, 'mycabina-gallery', 'events');
@@ -258,52 +469,29 @@ app.get('/:event/logout', (req, res) => {
   res.redirect(`/${event}`);
 });
 
-// Multer configuration for uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const event = req.body.event || '';
-    const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
-    const eventDir = path.join(EVENTS_DIR, safe);
-    cb(null, eventDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${name}-${timestamp}${ext}`);
-  }
-});
-
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (EVENT_IMAGE_EXTS.includes(path.extname(file.originalname).toLowerCase())) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
-  },
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
-});
-
-// Upload endpoint: POST /:event/upload
+// Upload endpoint
 app.post('/:event/upload', upload.array('photos', 50), (req, res) => {
-  const event = req.params.event;
-  const password = req.body.password;
-  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
-  const eventDir = getEventDir(safe);
+  const { event } = req.params;
+  const { password } = req.body;
+  const eventDir = getEventDir(event);
 
-  // Validate event exists
   if (!fs.existsSync(eventDir)) {
+    // Clean up uploaded files if event doesn't exist
+    if (req.files) {
+      req.files.forEach(f => {
+        try { fs.unlinkSync(f.path); } catch(e) {}
+      });
+    }
     return res.status(404).json({ error: 'Event not found' });
   }
 
-  // Validate password
   const correctPassword = getEventPassword(eventDir);
-  if (password !== correctPassword) {
-    // Delete uploaded files if password wrong
+  if (!correctPassword || password !== correctPassword) {
+    // Clean up uploaded files if password is wrong
     if (req.files) {
-      req.files.forEach(f => fs.unlinkSync(f.path));
+      req.files.forEach(f => {
+        try { fs.unlinkSync(f.path); } catch(e) {}
+      });
     }
     return res.status(401).json({ error: 'Invalid password' });
   }
@@ -312,365 +500,23 @@ app.post('/:event/upload', upload.array('photos', 50), (req, res) => {
     return res.status(400).json({ error: 'No files uploaded' });
   }
 
-  const uploaded = req.files.map(f => ({
+  const uploadedFiles = req.files.map(f => ({
     filename: f.filename,
+    originalname: f.originalname,
     size: f.size,
   }));
 
   res.json({
     success: true,
-    message: `${req.files.length} photo(s) uploaded`,
-    files: uploaded,
+    message: `${uploadedFiles.length} photo(s) uploaded successfully`,
+    files: uploadedFiles,
   });
 });
-
-// Upload page: GET /:event/upload
-app.get('/:event/upload', (req, res) => {
-  const event = req.params.event;
-  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
-  const eventDir = getEventDir(safe);
-
-  if (!fs.existsSync(eventDir)) {
-    return res.status(404).send('Event not found');
-  }
-
-  const displayName = safe.replace(/[-_]/g, ' ');
-  return res.send(renderUploadPage(safe, displayName));
-});
-
-function renderUploadPage(eventName, displayName) {
-  return \`<!DOCTYPE html>
-<html lang="ro">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Încarcă fotos — \${displayName} | MyCabina</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --serif: 'Cormorant Garamond', Georgia, serif;
-      --sans: 'DM Sans', system-ui, sans-serif;
-      --brown: #6b3e1d;
-      --brown-light: #8b5a2b;
-      --brown-pale: #d8b98a;
-      --cream: #f7f2ea;
-      --cream-dark: #eee4d2;
-      --ink: #1a140e;
-      --ink-soft: #8c7a63;
-    }
-    html, body { height: 100%; }
-    body {
-      font-family: var(--sans);
-      background: var(--cream);
-      color: var(--ink);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100dvh;
-      padding: 2rem;
-    }
-    .upload-wrap {
-      width: 100%;
-      max-width: 500px;
-    }
-    .upload-card {
-      background: #fff;
-      border: 1px solid var(--cream-dark);
-      border-radius: 4px;
-      padding: 3rem 2.5rem;
-      box-shadow: 0 4px 32px rgba(107,62,29,.06);
-    }
-    .upload-title {
-      font-family: var(--serif);
-      font-size: 2rem;
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 1rem;
-      text-transform: capitalize;
-    }
-    .upload-subtitle {
-      font-size: .85rem;
-      color: var(--ink-soft);
-      margin-bottom: 2rem;
-      line-height: 1.6;
-    }
-    .dropzone {
-      border: 2px dashed var(--brown-pale);
-      border-radius: 4px;
-      padding: 2.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all .3s;
-      margin-bottom: 1.5rem;
-      background: rgba(216,185,138,.08);
-    }
-    .dropzone:hover, .dropzone.active {
-      border-color: var(--brown);
-      background: rgba(216,185,138,.15);
-    }
-    .dropzone-icon {
-      font-size: 2.5rem;
-      margin-bottom: .8rem;
-    }
-    .dropzone-text {
-      font-size: .9rem;
-      color: var(--ink);
-      margin-bottom: .3rem;
-    }
-    .dropzone-hint {
-      font-size: .75rem;
-      color: var(--ink-soft);
-    }
-    .file-input {
-      display: none;
-    }
-    .field-label {
-      display: block;
-      font-size: .72rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--ink-soft);
-      margin-bottom: .5rem;
-      margin-top: 1.5rem;
-    }
-    .field-input {
-      width: 100%;
-      padding: .75rem 1rem;
-      border: 1px solid var(--cream-dark);
-      border-radius: 2px;
-      background: var(--cream);
-      font-family: var(--sans);
-      font-size: .9rem;
-      color: var(--ink);
-      outline: none;
-    }
-    .field-input:focus {
-      border-color: var(--brown-pale);
-      box-shadow: 0 0 0 3px rgba(216,185,138,.2);
-    }
-    .btn-upload {
-      margin-top: 1.5rem;
-      width: 100%;
-      padding: .85rem;
-      background: var(--brown);
-      color: #fff;
-      border: none;
-      border-radius: 2px;
-      font-family: var(--sans);
-      font-size: .8rem;
-      font-weight: 500;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background .25s;
-    }
-    .btn-upload:hover { background: var(--brown-light); }
-    .btn-upload:disabled {
-      background: var(--ink-soft);
-      cursor: not-allowed;
-      opacity: .6;
-    }
-    .file-list {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background: var(--cream);
-      border-radius: 2px;
-      font-size: .85rem;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .file-item {
-      padding: .5rem 0;
-      border-bottom: 1px solid var(--cream-dark);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .file-item:last-child {
-      border-bottom: none;
-    }
-    .file-name {
-      color: var(--ink);
-    }
-    .file-remove {
-      color: var(--brown-pale);
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .file-remove:hover {
-      color: var(--brown);
-    }
-    .message {
-      margin-top: 1rem;
-      padding: .75rem 1rem;
-      border-radius: 2px;
-      font-size: .85rem;
-      display: none;
-    }
-    .message.success {
-      background: #e8f5e9;
-      color: #2e7d32;
-      border: 1px solid #a5d6a7;
-    }
-    .message.error {
-      background: #ffebee;
-      color: #c62828;
-      border: 1px solid #ef9a9a;
-    }
-    .uploading {
-      display: none;
-      text-align: center;
-      color: var(--ink-soft);
-      margin-top: 1rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="upload-wrap">
-    <div class="upload-card">
-      <h1 class="upload-title">\${displayName}</h1>
-      <p class="upload-subtitle">Încarcă fotografiile din evenimentul tău. Drag & drop sau click pentru a selecta.</p>
-
-      <form id="uploadForm" enctype="multipart/form-data">
-        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-          <div class="dropzone-icon">📸</div>
-          <p class="dropzone-text">Trage imaginile aici</p>
-          <p class="dropzone-hint">sau click pentru a selecta</p>
-        </div>
-
-        <input type="file" id="fileInput" class="file-input" multiple accept="image/*"/>
-
-        <div id="fileList" class="file-list" style="display:none;"></div>
-
-        <label class="field-label" for="password">Parolă eveniment</label>
-        <input type="password" id="password" name="password" class="field-input" placeholder="Introdu parola" required/>
-
-        <button type="submit" class="btn-upload" id="uploadBtn">Încarcă fotografiile</button>
-      </form>
-
-      <div class="uploading" id="uploading">
-        ⏳ Se încarcă... Stai liniștit
-      </div>
-
-      <div id="message" class="message"></div>
-    </div>
-  </div>
-
-  <script>
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-    const form = document.getElementById('uploadForm');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const uploading = document.getElementById('uploading');
-    const message = document.getElementById('message');
-    let selectedFiles = [];
-
-    // Drag & drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
-      dropzone.addEventListener(evt, e => e.preventDefault());
-    });
-    ['dragenter', 'dragover'].forEach(evt => {
-      dropzone.addEventListener(evt, () => dropzone.classList.add('active'));
-    });
-    ['dragleave', 'drop'].forEach(evt => {
-      dropzone.addEventListener(evt, () => dropzone.classList.remove('active'));
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-      const files = Array.from(e.dataTransfer.files);
-      selectedFiles.push(...files.filter(f => f.type.startsWith('image/')));
-      updateFileList();
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      selectedFiles.push(...Array.from(e.target.files));
-      updateFileList();
-    });
-
-    function updateFileList() {
-      if (selectedFiles.length === 0) {
-        fileList.style.display = 'none';
-        return;
-      }
-      fileList.style.display = 'block';
-      fileList.innerHTML = selectedFiles.map((f, i) => \`
-        <div class="file-item">
-          <span class="file-name">\${f.name}</span>
-          <span class="file-remove" onclick="removeFile(\${i})">✕</span>
-        </div>
-      \`).join('');
-    }
-
-    function removeFile(idx) {
-      selectedFiles.splice(idx, 1);
-      updateFileList();
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      if (selectedFiles.length === 0) {
-        showMessage('Selectează cel puțin o imagine', 'error');
-        return;
-      }
-
-      const password = document.getElementById('password').value;
-      if (!password) {
-        showMessage('Introdu parola evenimentului', 'error');
-        return;
-      }
-
-      const formData = new FormData();
-      selectedFiles.forEach(f => formData.append('photos', f));
-      formData.append('password', password);
-      formData.append('event', '\${eventName}');
-
-      uploadBtn.disabled = true;
-      uploading.style.display = 'block';
-      message.style.display = 'none';
-
-      try {
-        const res = await fetch('/\${eventName}/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          showMessage(\`✓ \${data.message}\`, 'success');
-          selectedFiles = [];
-          updateFileList();
-          fileInput.value = '';
-          setTimeout(() => window.location.href = '/\${eventName}', 2000);
-        } else {
-          showMessage(data.error || 'Upload failed', 'error');
-        }
-      } catch (err) {
-        showMessage(err.message, 'error');
-      } finally {
-        uploadBtn.disabled = false;
-        uploading.style.display = 'none';
-      }
-    });
-
-    function showMessage(text, type) {
-      message.textContent = text;
-      message.className = \`message \${type}\`;
-      message.style.display = 'block';
-    }
-  </script>
-</body>
-</html>\`;
-}
 
 // Main event gallery route (but NOT for special routes like /api, /galerie, etc)
 app.get('/:event', (req, res, next) => {
   // Skip if it matches known routes
-  if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook', 'upload'].includes(req.params.event)) {
+  if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook', 'admin', 'upload.html'].includes(req.params.event)) {
     return next();
   }
   

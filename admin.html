@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyCabina Admin — Event & Upload Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-mid: #4b3a2a;
+      --ink-soft: #8c7a63;
+      --white: #ffffff;
+      --success: #3d6b3e;
+      --error: #9b2c2c;
+      --warning: #8b6b2c;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+      color: var(--white);
+      padding: 3rem 2rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(107, 62, 29, 0.15);
+    }
+
+    .page-header h1 {
+      font-family: var(--serif);
+      font-size: 2.5rem;
+      font-weight: 300;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .page-header p {
+      font-size: 0.9rem;
+      opacity: 0.95;
+      letter-spacing: 0.05em;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--cream-dark);
+    }
+
+    .tab-btn {
+      padding: 1rem 1.5rem;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .tab-btn:hover {
+      color: var(--brown);
+    }
+
+    .tab-btn.active {
+      color: var(--brown);
+      border-bottom-color: var(--brown);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(107, 62, 29, 0.06);
+    }
+
+    .card h2 {
+      font-family: var(--serif);
+      font-size: 1.8rem;
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      color: var(--ink);
+      border-bottom: 1px solid var(--cream-dark);
+      padding-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--cream-dark);
+      border-radius: 2px;
+      background: var(--cream);
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--brown-pale);
+      box-shadow: 0 0 0 3px rgba(216, 185, 138, 0.2);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      background: var(--brown);
+      color: var(--white);
+      border: none;
+      border-radius: 2px;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      background: var(--brown-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(107, 62, 29, 0.25);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: var(--cream-dark);
+      color: var(--ink);
+    }
+
+    .btn-secondary:hover {
+      background: var(--brown-pale);
+    }
+
+    .btn-danger {
+      background: var(--error);
+    }
+
+    .btn-danger:hover {
+      background: #b83a3a;
+    }
+
+    .btn-success {
+      background: var(--success);
+    }
+
+    .btn-success:hover {
+      background: #2d5a2f;
+    }
+
+    .btn-small {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+
+    .event-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .event-card {
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(107, 62, 29, 0.06);
+      transition: all 0.3s ease;
+    }
+
+    .event-card:hover {
+      box-shadow: 0 4px 16px rgba(107, 62, 29, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .event-card-title {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      font-weight: 400;
+      margin-bottom: 0.5rem;
+      color: var(--brown);
+    }
+
+    .event-card-meta {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .event-card-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.75rem;
+      background: var(--cream-dark);
+      color: var(--ink);
+      border-radius: 2px;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: rgba(61, 107, 62, 0.15);
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background: rgba(139, 107, 44, 0.15);
+      color: var(--warning);
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      border-left: 3px solid;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    .alert-error {
+      background: #fdf2f2;
+      color: var(--error);
+      border-color: var(--error);
+    }
+
+    .alert-warning {
+      background: #fffaf0;
+      color: var(--warning);
+      border-color: var(--warning);
+    }
+
+    .alert-info {
+      background: #f0f9ff;
+      color: #1e40af;
+      border-color: #1e40af;
+    }
+
+    .code-block {
+      background: var(--ink);
+      color: #d8b98a;
+      padding: 1rem;
+      border-radius: 2px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin: 1rem 0;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      background: var(--brown);
+      color: var(--white);
+      border: none;
+      border-radius: 2px;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .code-wrapper {
+      position: relative;
+      margin: 1rem 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, var(--cream-dark) 0%, var(--cream) 100%);
+      padding: 1.5rem;
+      border-radius: 4px;
+      border-left: 3px solid var(--brown);
+    }
+
+    .stat-value {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--brown);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--ink-soft);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 300;
+      margin-bottom: 0.5rem;
+      color: var(--ink-mid);
+    }
+
+    .help-text {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(26, 20, 14, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--white);
+      border-radius: 4px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(26, 20, 14, 0.3);
+    }
+
+    .modal-header {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 1.5rem;
+      color: var(--ink);
+    }
+
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--ink-soft);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--cream-dark);
+      border-top-color: var(--brown);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .copy-success {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--success);
+      color: var(--white);
+      padding: 1rem 1.5rem;
+      border-radius: 2px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: slideIn 0.3s ease;
+    }
+
+    footer {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 2rem;
+      text-align: center;
+      margin-top: 4rem;
+      font-size: 0.8rem;
+    }
+
+    footer a {
+      color: var(--brown-pale);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>MyCabina Admin</h1>
+    <p>Manage Events & Configure Auto-Upload</p>
+  </div>
+
+  <div class="container">
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="events">📅 Events</button>
+      <button class="tab-btn" data-tab="upload">📤 Auto-Upload</button>
+      <button class="tab-btn" data-tab="help">❓ Help</button>
+    </div>
+
+    <!-- EVENTS TAB -->
+    <div id="events" class="tab-content active">
+      <div class="card">
+        <h2>Create New Event</h2>
+        <form id="createEventForm">
+          <div class="form-group">
+            <label for="eventName">Event Name</label>
+            <input
+              type="text"
+              id="eventName"
+              name="eventName"
+              placeholder="e.g., Wedding Ana & Ion, Birthday Party..."
+              required
+            />
+            <div class="help-text">
+              This will be used as the event URL. Example: mycabina.com/wedding-ana-ion
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="eventPassword">Upload Password</label>
+              <input
+                type="password"
+                id="eventPassword"
+                name="eventPassword"
+                placeholder="Create a strong password"
+                required
+              />
+              <div class="help-text">
+                Guests will use this to upload photos from their phones
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="eventGalleryPassword">Gallery Password</label>
+              <input
+                type="password"
+                id="eventGalleryPassword"
+                name="eventGalleryPassword"
+                placeholder="Password to view photos (optional)"
+              />
+              <div class="help-text">Leave empty if you don't want password protection</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="eventDate">Event Date</label>
+              <input type="date" id="eventDate" name="eventDate" />
+            </div>
+
+            <div class="form-group">
+              <label for="eventLocation">Location</label>
+              <input type="text" id="eventLocation" name="eventLocation" placeholder="e.g., Bucharest, Romania" />
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" class="btn">✓ Create Event</button>
+            <button type="reset" class="btn btn-secondary">Reset</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Events List -->
+      <div class="card">
+        <h2>Your Events</h2>
+        <div id="eventsList"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div id="upload" class="tab-content">
+      <div class="card">
+        <h2>Auto-Upload Setup Guide</h2>
+        <p>
+          Use this simple method to automatically upload photos from your laptop to any event.
+        </p>
+
+        <div style="margin-top: 2rem">
+          <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Step 1: Install Node.js</h3>
+          <p>Download and install from <a href="https://nodejs.org" target="_blank">nodejs.org</a></p>
+
+          <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">
+            Step 2: Get Your Upload Script
+          </h3>
+
+          <div class="alert alert-info">
+            <strong>The upload script is ready to use!</strong> Download it or copy the command below to start uploading
+            photos.
+          </div>
+
+          <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Step 3: Run Upload Command</h3>
+
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: 500">Select an event to get the upload command:</label>
+
+          <div class="form-group">
+            <select id="uploadEventSelect">
+              <option value="">Choose an event...</option>
+            </select>
+          </div>
+
+          <div id="uploadCommandBox" style="display: none">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500">Your Upload Command:</label>
+            <div class="code-wrapper">
+              <button class="copy-btn" onclick="copyToClipboard()">Copy</button>
+              <div class="code-block" id="uploadCommand"></div>
+            </div>
+
+            <div class="alert alert-info" style="margin-top: 1rem">
+              <strong>On Windows:</strong> Paste the command into PowerShell or Command Prompt
+              <br />
+              <strong>On Mac/Linux:</strong> Paste into Terminal
+              <br />
+              <br />
+              The script will watch your folder and automatically upload new photos as they arrive!
+            </div>
+          </div>
+
+          <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Example Usage</h3>
+
+          <div class="code-wrapper">
+            <div class="code-block">
+# Navigate to your photos folder, then run:
+node photo-uploader.js ~/Pictures/MyEvent event-name password-123 https://mycabina.onrender.com
+
+# The script will watch for new images and upload them automatically!
+# Supported formats: JPG, PNG, GIF, WebP, HEIC, AVIF
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HELP TAB -->
+    <div id="help" class="tab-content">
+      <div class="card">
+        <h2>How to Use MyCabina Admin</h2>
+
+        <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Creating an Event</h3>
+        <ol style="margin-left: 2rem; line-height: 1.8">
+          <li>Click the "Events" tab</li>
+          <li>Fill in event details (name, passwords, date, location)</li>
+          <li>Click "Create Event"</li>
+          <li>Share the guest upload link with friends</li>
+          <li>Share the gallery link for viewing photos</li>
+        </ol>
+
+        <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">
+          Setting Up Auto-Upload from Your Laptop
+        </h3>
+        <ol style="margin-left: 2rem; line-height: 1.8">
+          <li>Go to the "Auto-Upload" tab</li>
+          <li>Select your event</li>
+          <li>Copy the command shown</li>
+          <li>Paste it into your terminal/command prompt</li>
+          <li>The script will watch your folder and upload new photos automatically!</li>
+        </ol>
+
+        <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Password Management</h3>
+        <ul style="margin-left: 2rem; line-height: 1.8">
+          <li>
+            <strong>Upload Password:</strong> Used by guests uploading photos. Share this with guests who want to
+            contribute.
+          </li>
+          <li>
+            <strong>Gallery Password:</strong> Used by guests viewing the gallery. Leave empty if you want the gallery
+            open to everyone.
+          </li>
+          <li>Both passwords are automatically generated and can be changed per event.</li>
+        </ul>
+
+        <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Supported Photo Formats</h3>
+        <p style="margin: 1rem 0">
+          <strong>Auto-upload supports:</strong> JPG, JPEG, PNG, GIF, WebP, HEIC, AVIF
+        </p>
+
+        <h3 style="font-family: var(--serif); font-size: 1.3rem; margin: 1.5rem 0 1rem">Troubleshooting</h3>
+        <dl style="margin-left: 2rem">
+          <dt style="font-weight: 600; margin-top: 1rem">Upload script not working?</dt>
+          <dd style="margin-top: 0.5rem; margin-left: 2rem">
+            Make sure Node.js is installed. Run <code>node --version</code> in your terminal.
+          </dd>
+
+          <dt style="font-weight: 600; margin-top: 1rem">Can't see uploaded photos?</dt>
+          <dd style="margin-top: 0.5rem; margin-left: 2rem">
+            Check that photos are in the correct folder. The script will show you when photos are uploaded.
+          </dd>
+
+          <dt style="font-weight: 600; margin-top: 1rem">Upload is slow?</dt>
+          <dd style="margin-top: 0.5rem; margin-left: 2rem">
+            Consider compressing images first. Smaller files upload faster!
+          </dd>
+        </dl>
+
+        <div class="alert alert-info" style="margin-top: 2rem">
+          <strong>💡 Pro Tip:</strong> Keep your laptop running while the upload script is active. The script will
+          automatically upload new photos as they arrive in your folder.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 MyCabina. Made with ☕ for your special events.</p>
+    <p>
+      Questions? <a href="https://wa.me/37360996464">Contact us on WhatsApp</a>
+    </p>
+  </footer>
+
+  <script>
+    // Detect if running locally or on production
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_URL = isLocalhost 
+      ? 'http://localhost:3000'
+      : window.location.origin;
+    // const API_URL = 'https://mycabina.onrender.com'; // Use this for production
+
+    // ─── TAB SWITCHING ───
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const tabName = e.target.dataset.tab;
+        switchTab(tabName);
+      });
+    });
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach((tab) => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.classList.remove('active');
+      });
+
+      document.getElementById(tabName).classList.add('active');
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    }
+
+    // ─── CREATE EVENT ───
+    document.getElementById('createEventForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const eventName = document.getElementById('eventName').value.trim();
+      const eventPassword = document.getElementById('eventPassword').value;
+      const eventGalleryPassword = document.getElementById('eventGalleryPassword').value;
+      const eventDate = document.getElementById('eventDate').value;
+      const eventLocation = document.getElementById('eventLocation').value;
+
+      if (!eventName || !eventPassword) {
+        showAlert('Please fill in required fields', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/admin/create-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: eventName,
+            uploadPassword: eventPassword,
+            galleryPassword: eventGalleryPassword || null,
+            date: eventDate || null,
+            location: eventLocation || null,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          showAlert(`✓ Event "${eventName}" created successfully!`, 'success');
+          document.getElementById('createEventForm').reset();
+          loadEvents();
+        } else {
+          const error = await response.json();
+          showAlert(error.error || 'Failed to create event', 'error');
+        }
+      } catch (err) {
+        showAlert('Network error: ' + err.message, 'error');
+      }
+    });
+
+    // ─── LOAD EVENTS ───
+    async function loadEvents() {
+      try {
+        const response = await fetch(`${API_URL}/api/admin/events`);
+        if (!response.ok) throw new Error('Failed to load events');
+
+        const events = await response.json();
+        renderEventsList(events);
+        renderUploadSelect(events);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('eventsList').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Could not load events</h3></div>';
+      }
+    }
+
+    function renderEventsList(events) {
+      const container = document.getElementById('eventsList');
+
+      if (!events || events.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">🎉</div><h3>No events yet</h3><p>Create your first event above!</p></div>';
+        return;
+      }
+
+      const html = events
+        .map(
+          (event) => `
+        <div class="event-card">
+          <div class="event-card-title">${escapeHtml(event.name)}</div>
+          <div class="event-card-meta">
+            ${event.date ? `📅 ${event.date}<br>` : ''}
+            ${event.location ? `📍 ${escapeHtml(event.location)}<br>` : ''}
+            <span class="badge badge-success">Upload Password Set</span>
+            ${event.galleryPassword ? '<span class="badge badge-warning">Gallery Protected</span>' : ''}
+          </div>
+          <div class="event-card-actions">
+            <button class="btn btn-small" onclick="copyUploadUrl('${event.slug}')">📋 Copy Upload Link</button>
+            <button class="btn btn-small" onclick="copyGalleryUrl('${event.slug}')">👁️ Copy Gallery Link</button>
+            <button class="btn btn-small btn-danger" onclick="deleteEvent('${event.slug}')">🗑️ Delete</button>
+          </div>
+        </div>
+      `
+        )
+        .join('');
+
+      container.innerHTML = html;
+    }
+
+    function renderUploadSelect(events) {
+      const select = document.getElementById('uploadEventSelect');
+      const currentValue = select.value;
+
+      select.innerHTML = '<option value="">Choose an event...</option>' + events.map((e) => `<option value="${e.slug}">${e.name}</option>`).join('');
+
+      select.value = currentValue;
+      select.addEventListener('change', updateUploadCommand);
+    }
+
+    // ─── UPLOAD COMMAND ───
+    function updateUploadCommand() {
+      const eventSlug = document.getElementById('uploadEventSelect').value;
+
+      if (!eventSlug) {
+        document.getElementById('uploadCommandBox').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('uploadCommandBox').style.display = 'block';
+
+      const command = `node photo-uploader.js "C:\\Users\\YourUsername\\Pictures\\EventPhotos" ${eventSlug} YOUR_PASSWORD ${API_URL}`;
+      document.getElementById('uploadCommand').textContent = command;
+    }
+
+    function copyToClipboard() {
+      const command = document.getElementById('uploadCommand').textContent;
+      navigator.clipboard.writeText(command).then(() => {
+        showAlert('✓ Command copied to clipboard!', 'success');
+      });
+    }
+
+    // ─── COPY URLs ───
+    function copyUploadUrl(slug) {
+      const url = `${API_URL}/${slug}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showAlert('✓ Upload link copied!', 'success');
+      });
+    }
+
+    function copyGalleryUrl(slug) {
+      const url = `${API_URL}/${slug}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showAlert('✓ Gallery link copied!', 'success');
+      });
+    }
+
+    // ─── DELETE EVENT ───
+    async function deleteEvent(slug) {
+      if (!confirm('Are you sure? This will delete the event and all uploaded photos.')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/api/admin/delete-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug }),
+        });
+
+        if (response.ok) {
+          showAlert('✓ Event deleted', 'success');
+          loadEvents();
+        } else {
+          showAlert('Failed to delete event', 'error');
+        }
+      } catch (err) {
+        showAlert('Network error', 'error');
+      }
+    }
+
+    // ─── UTILITIES ───
+    function showAlert(message, type) {
+      const div = document.createElement('div');
+      div.className = `alert alert-${type}`;
+      div.textContent = message;
+      div.style.position = 'fixed';
+      div.style.top = '1.5rem';
+      div.style.right = '1.5rem';
+      div.style.zIndex = '2000';
+      div.style.maxWidth = '400px';
+
+      document.body.appendChild(div);
+
+      setTimeout(() => div.remove(), 4000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ─── INITIALIZATION ───
+    loadEvents();
+  </script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Upload Fotografii — MyCabina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --serif: 'Cormorant Garamond', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --brown: #6b3e1d;
+      --brown-light: #8b5a2b;
+      --brown-pale: #d8b98a;
+      --cream: #f7f2ea;
+      --cream-dark: #eee4d2;
+      --ink: #1a140e;
+      --ink-mid: #4b3a2a;
+      --ink-soft: #8c7a63;
+      --white: #ffffff;
+      --success: #3d6b3e;
+      --error: #9b2c2c;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+      color: var(--white);
+      padding: 2rem;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(107, 62, 29, 0.15);
+    }
+
+    .page-header h1 {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .page-header p {
+      font-size: 0.85rem;
+      opacity: 0.95;
+      letter-spacing: 0.05em;
+      text-transform: capitalize;
+    }
+
+    .container {
+      flex: 1;
+      max-width: 600px;
+      width: 90%;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(107, 62, 29, 0.06);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--cream-dark);
+      border-radius: 2px;
+      background: var(--cream);
+      font-family: var(--sans);
+      font-size: 1rem;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--brown-pale);
+      box-shadow: 0 0 0 3px rgba(216, 185, 138, 0.2);
+    }
+
+    .dropzone {
+      border: 2px dashed var(--brown-pale);
+      border-radius: 4px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(139, 90, 43, 0.02);
+    }
+
+    .dropzone:hover,
+    .dropzone.active {
+      border-color: var(--brown);
+      background: rgba(107, 62, 29, 0.05);
+    }
+
+    .dropzone-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .dropzone-text {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
+    }
+
+    .dropzone-subtext {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .files-preview {
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .file-preview {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--cream-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+
+    .file-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .file-preview-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 20, 14, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .file-preview:hover .file-preview-overlay {
+      opacity: 1;
+    }
+
+    .file-remove-btn {
+      background: var(--error);
+      color: var(--white);
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 2px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      background: var(--brown);
+      color: var(--white);
+      border: none;
+      border-radius: 2px;
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background: var(--brown-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(107, 62, 29, 0.25);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      background: var(--cream-dark);
+      color: var(--ink-soft);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      border-left: 3px solid;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .alert-success {
+      background: #f0fdf4;
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    .alert-error {
+      background: #fdf2f2;
+      color: var(--error);
+      border-color: var(--error);
+    }
+
+    .progress {
+      width: 100%;
+      height: 4px;
+      background: var(--cream-dark);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--brown);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .upload-info {
+      padding: 1rem;
+      background: rgba(107, 62, 29, 0.05);
+      border-radius: 2px;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--ink-mid);
+      line-height: 1.6;
+    }
+
+    .help-text {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--cream-dark);
+      border-top-color: var(--brown);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    footer {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--brown-pale);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header" id="eventHeader">
+    <h1 id="eventName">Incarcă Fotografii</h1>
+    <p id="eventDate"></p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <form id="uploadForm">
+        <div id="alertContainer"></div>
+
+        <div class="form-group">
+          <label for="passwordInput">Parolă Upload</label>
+          <input
+            type="password"
+            id="passwordInput"
+            name="password"
+            placeholder="Introdu parola primită"
+            required
+          />
+          <div class="help-text">Ai primit o parolă pentru a încărca fotografiile.</div>
+        </div>
+
+        <div class="form-group">
+          <label>Alege fotografiile</label>
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">📸</div>
+            <div class="dropzone-text">Apasă pentru a alege sau trage fotografiile aici</div>
+            <div class="dropzone-subtext">JPG, PNG, GIF, WebP (max 50MB per file)</div>
+          </div>
+          <input type="file" id="fileInput" multiple accept="image/*" />
+        </div>
+
+        <div id="filesPreview" class="files-preview"></div>
+
+        <div id="uploadProgress" style="display: none">
+          <p style="margin-bottom: 0.5rem; font-size: 0.9rem">Încărcare...</p>
+          <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--ink-soft)" id="uploadStatus"></p>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">📤 Incarcă Fotografiile</button>
+
+        <div class="upload-info">
+          <strong>💡 Sfat:</strong> Selectează fotografiile pe care dorești să le partajezi cu evenimentul.
+          Poți selecta mai multe imagini simultan. Imaginile vor fi disponibile în galeria evenimentului.
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 MyCabina. Amintiri de neuitat pentru evenimentele tale speciale.</p>
+  </footer>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const filesPreview = document.getElementById('filesPreview');
+    const form = document.getElementById('uploadForm');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const alertContainer = document.getElementById('alertContainer');
+    const eventName = new URL(window.location).pathname.split('/')[1];
+    const eventHeader = document.getElementById('eventHeader');
+
+    // Detect if running locally or on production
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_URL = isLocalhost 
+      ? 'http://localhost:3000'
+      : window.location.origin;
+
+    let selectedFiles = [];
+
+    // Dropzone handlers
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (e) => e.preventDefault());
+    });
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      dropzone.addEventListener(eventName, () => dropzone.classList.add('active'));
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      dropzone.addEventListener(eventName, () => dropzone.classList.remove('active'));
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+      handleFiles(files);
+    });
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      selectedFiles = Array.from(files);
+      renderPreview();
+    }
+
+    function renderPreview() {
+      filesPreview.innerHTML = selectedFiles
+        .map((file, index) => {
+          const reader = new FileReader();
+          const div = document.createElement('div');
+          div.className = 'file-preview';
+          div.innerHTML = '<div class="file-preview-overlay"><button class="file-remove-btn" onclick="removeFile(' + index + ')">Șterge</button></div>';
+
+          reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            div.prepend(img);
+          };
+
+          reader.readAsDataURL(file);
+          return div;
+        })
+        .reduce((container, el) => {
+          container.appendChild(el);
+          return container;
+        }, document.createElement('div'));
+
+      if (selectedFiles.length === 0) {
+        filesPreview.innerHTML = '';
+      }
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderPreview();
+    }
+
+    function showAlert(message, type) {
+      const div = document.createElement('div');
+      div.className = `alert alert-${type}`;
+      div.textContent = message;
+      alertContainer.innerHTML = '';
+      alertContainer.appendChild(div);
+      setTimeout(() => div.remove(), 5000);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (selectedFiles.length === 0) {
+        showAlert('❌ Te rog selectează cel puțin o fotografie', 'error');
+        return;
+      }
+
+      const password = document.getElementById('passwordInput').value;
+
+      if (!password) {
+        showAlert('❌ Te rog introdu parola', 'error');
+        return;
+      }
+
+      uploadProgress.style.display = 'block';
+      document.getElementById('submitBtn').disabled = true;
+
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append('photos', file));
+      formData.append('password', password);
+
+      try {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            uploadStatus.textContent = `${Math.round(percentComplete)}% — ${e.loaded} / ${e.total} bytes`;
+          }
+        });
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200 || xhr.status === 201) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              showAlert(`✅ ${response.message}`, 'success');
+              selectedFiles = [];
+              fileInput.value = '';
+              renderPreview();
+              document.getElementById('passwordInput').value = '';
+              uploadProgress.style.display = 'none';
+              progressBar.style.width = '0%';
+            } catch (e) {
+              showAlert('✅ Fotografiile au fost încărcate cu succes!', 'success');
+              selectedFiles = [];
+              renderPreview();
+            }
+          } else {
+            try {
+              const error = JSON.parse(xhr.responseText);
+              showAlert(`❌ Eroare: ${error.error}`, 'error');
+            } catch (e) {
+              showAlert('❌ Eroare la încărcare. Încearcă din nou.', 'error');
+            }
+          }
+          document.getElementById('submitBtn').disabled = false;
+        });
+
+        xhr.addEventListener('error', () => {
+          showAlert('❌ Eroare de rețea. Verifică conexiunea.', 'error');
+          document.getElementById('submitBtn').disabled = false;
+          uploadProgress.style.display = 'none';
+        });
+
+        xhr.open('POST', `${API_URL}/${eventName}/upload`);
+        xhr.send(formData);
+      } catch (err) {
+        showAlert('❌ ' + err.message, 'error');
+        document.getElementById('submitBtn').disabled = false;
+        uploadProgress.style.display = 'none';
+      }
+    });
+
+    // Update header with event name
+    document.getElementById('eventName').textContent = eventName.replace(/[-_]/g, ' ').toUpperCase();
+  </script>
+</body>
+</html>
