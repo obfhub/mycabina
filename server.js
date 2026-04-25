@@ -97,12 +97,13 @@ class S3Storage {
   constructor(options) {
     this.s3Client = options.s3Client;
     this.bucket = options.bucket;
-    this.acl = options.acl || 'private';
     this.keyGenerator = options.key;
     this.metadataGenerator = options.metadata;
   }
 
   _handleFile(req, file, cb) {
+    const self = this;
+    
     const keyGenerator = (callback) => {
       if (typeof this.keyGenerator === 'function') {
         this.keyGenerator(req, file, callback);
@@ -111,61 +112,81 @@ class S3Storage {
       }
     };
 
-    keyGenerator(async (err, key) => {
-      if (err) return cb(err);
+    keyGenerator((err, key) => {
+      if (err) {
+        console.error('[S3] Key generation error:', err);
+        return cb(err);
+      }
 
-      try {
-        const chunks = [];
-        
-        file.stream.on('data', chunk => {
-          chunks.push(chunk);
-        });
+      const chunks = [];
+      let uploadError = null;
+      let streamEnded = false;
 
-        file.stream.on('end', async () => {
+      file.stream.on('data', chunk => {
+        chunks.push(chunk);
+      });
+
+      file.stream.on('error', (streamErr) => {
+        console.error('[S3] Stream error:', streamErr);
+        uploadError = streamErr;
+        if (!streamEnded) {
+          streamEnded = true;
+          cb(streamErr);
+        }
+      });
+
+      file.stream.on('end', async () => {
+        if (streamEnded) return; // Already handled
+        streamEnded = true;
+
+        if (uploadError) {
+          return cb(uploadError);
+        }
+
+        try {
           const buffer = Buffer.concat(chunks);
           
-          try {
-            const params = {
-              Bucket: this.bucket,
-              Key: key,
-              Body: buffer,
-              ContentType: file.mimetype,
-              ACL: this.acl,
-            };
+          console.log(`[S3] Preparing upload: bucket=${self.bucket}, key=${key}, size=${buffer.length}`);
+          
+          const params = {
+            Bucket: self.bucket,
+            Key: key,
+            Body: buffer,
+            ContentType: file.mimetype,
+          };
 
-            // Add metadata if provided
-            if (typeof this.metadataGenerator === 'function') {
-              this.metadataGenerator(req, file, (err, metadata) => {
-                if (!err && metadata) {
-                  params.Metadata = metadata;
-                }
-              });
-            }
-
-            const command = new PutObjectCommand(params);
-            await this.s3Client.send(command);
-
-            cb(null, {
-              fieldname: file.fieldname,
-              originalname: file.originalname,
-              encoding: file.encoding,
-              mimetype: file.mimetype,
-              size: buffer.length,
-              bucket: this.bucket,
-              key: key,
-              location: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
+          // Add metadata if provided
+          if (typeof self.metadataGenerator === 'function') {
+            self.metadataGenerator(req, file, (err, metadata) => {
+              if (!err && metadata) {
+                params.Metadata = metadata;
+              }
             });
-          } catch (uploadErr) {
-            cb(uploadErr);
           }
-        });
 
-        file.stream.on('error', (streamErr) => {
-          cb(streamErr);
-        });
-      } catch (err) {
-        cb(err);
-      }
+          console.log('[S3] Sending PutObjectCommand...');
+          
+          const command = new PutObjectCommand(params);
+          const result = await self.s3Client.send(command);
+
+          console.log('[S3] Upload successful:', result.$metadata);
+
+          cb(null, {
+            fieldname: file.fieldname,
+            originalname: file.originalname,
+            encoding: file.encoding,
+            mimetype: file.mimetype,
+            size: buffer.length,
+            bucket: self.bucket,
+            key: key,
+            location: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
+          });
+        } catch (uploadErr) {
+          console.error('[S3] PutObjectCommand failed:', uploadErr.message, uploadErr.code);
+          console.error('[S3] Full error:', uploadErr);
+          cb(uploadErr);
+        }
+      });
     });
   }
 
@@ -176,8 +197,14 @@ class S3Storage {
     });
 
     this.s3Client.send(command)
-      .then(() => cb())
-      .catch(cb);
+      .then(() => {
+        console.log('[S3] File deleted:', file.key);
+        cb();
+      })
+      .catch(err => {
+        console.error('[S3] Delete failed:', err);
+        cb(err);
+      });
   }
 }
 
@@ -193,7 +220,6 @@ if (useR2 && s3Client) {
   storage = new S3Storage({
     s3Client: s3Client,
     bucket: process.env.R2_BUCKET_NAME,
-    acl: 'private',
     metadata: (req, file, cb) => {
       const eventName = req.params.event || 'upload';
       cb(null, { fieldName: file.fieldname, event: eventName });
