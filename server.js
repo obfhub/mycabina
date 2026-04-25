@@ -5,7 +5,6 @@ const fs = require('fs');
 const archiver = require('archiver');
 const multer = require('multer');
 const { S3Client, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const multerS3 = require('multer-s3');
 
 const app = express();
