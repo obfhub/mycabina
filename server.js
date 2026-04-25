@@ -157,6 +157,14 @@ const upload = multer({
   }
 });
 
+// Multer error handler middleware
+function handleMulterError(err, req, res, next) {
+  if (err) {
+    return res.status(400).json({ error: 'Upload error: ' + err.message });
+  }
+  next();
+}
+
 // ── Helpers ─────────────────────────────────────────────────
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 const EVENT_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
@@ -350,6 +358,8 @@ app.get('/:event/upload', (req, res) => {
 // Get all events (API)
 app.get('/api/admin/events', async (req, res) => {
   try {
+    console.log('[DEBUG] /api/admin/events called, useR2:', useR2);
+    
     if (useR2 && s3Client) {
       // List events from R2
       const command = new ListObjectsV2Command({
@@ -409,12 +419,15 @@ app.get('/api/admin/events', async (req, res) => {
         }
       }
       
+      console.log('[DEBUG] R2 events found:', events.length);
       res.json(events);
     } else {
       // List events from local filesystem
       const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+      console.log('[DEBUG] Reading events from:', eventsDir);
       
       if (!fs.existsSync(eventsDir)) {
+        console.log('[DEBUG] Events directory does not exist');
         return res.json([]);
       }
 
@@ -422,6 +435,8 @@ app.get('/api/admin/events', async (req, res) => {
         const fullPath = path.join(eventsDir, f);
         return fs.statSync(fullPath).isDirectory();
       });
+      
+      console.log('[DEBUG] Folders found:', folders);
 
       const events = folders.map(folder => {
         const eventDir = path.join(eventsDir, folder);
@@ -442,7 +457,7 @@ app.get('/api/admin/events', async (req, res) => {
             galleryPassword = passData.galleryPassword || null;
           }
         } catch (e) {
-          // Ignore errors reading metadata
+          console.log('[DEBUG] Error reading metadata for', folder, ':', e.message);
         }
 
         const images = fs.readdirSync(eventDir)
@@ -460,11 +475,12 @@ app.get('/api/admin/events', async (req, res) => {
         };
       });
 
+      console.log('[DEBUG] Total events to return:', events.length);
       res.json(events);
     }
   } catch (err) {
     console.error('Error reading events:', err);
-    res.status(500).json({ error: 'Failed to read events' });
+    res.status(500).json({ error: 'Failed to read events: ' + err.message });
   }
 });
 
@@ -653,46 +669,78 @@ app.get('/:event/logout', (req, res) => {
 });
 
 // Upload endpoint
-app.post('/:event/upload', upload.array('photos', 50), (req, res) => {
-  const { event } = req.params;
-  const { password } = req.body;
-  const eventDir = getEventDir(event);
-
-  if (!fs.existsSync(eventDir)) {
-    // Clean up uploaded files if event doesn't exist
-    if (req.files) {
-      req.files.forEach(f => {
-        try { fs.unlinkSync(f.path); } catch(e) {}
-      });
+app.post('/:event/upload', (req, res, next) => {
+  upload.array('photos', 50)(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ error: 'Upload error: ' + err.message });
     }
-    return res.status(404).json({ error: 'Event not found' });
-  }
+    
+    const { event } = req.params;
+    const { password } = req.body;
+    const eventDir = getEventDir(event);
 
-  const correctPassword = getEventPassword(eventDir);
-  if (!correctPassword || password !== correctPassword) {
-    // Clean up uploaded files if password is wrong
-    if (req.files) {
-      req.files.forEach(f => {
-        try { fs.unlinkSync(f.path); } catch(e) {}
+    try {
+      if (!fs.existsSync(eventDir)) {
+        // Clean up uploaded files if event doesn't exist
+        if (req.files && req.files.length > 0) {
+          if (!useR2 && req.files[0].path) {
+            // Only delete local files
+            req.files.forEach(f => {
+              try { fs.unlinkSync(f.path); } catch(e) {}
+            });
+          }
+        }
+        return res.status(404).json({ error: 'Event not found' });
+      }
+
+      const correctPassword = getEventPassword(eventDir);
+      if (!correctPassword || password !== correctPassword) {
+        // Clean up uploaded files if password is wrong
+        if (req.files && req.files.length > 0) {
+          if (!useR2 && req.files[0].path) {
+            // Only delete local files
+            req.files.forEach(f => {
+              try { fs.unlinkSync(f.path); } catch(e) {}
+            });
+          }
+        }
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+
+      // Format response based on storage type
+      const uploadedFiles = req.files.map(f => {
+        if (useR2 && s3Client) {
+          // multer-s3 structure
+          return {
+            filename: f.key ? f.key.split('/').pop() : f.originalname,
+            originalname: f.originalname,
+            size: f.size,
+            location: f.location || null,
+          };
+        } else {
+          // Local disk structure
+          return {
+            filename: f.filename,
+            originalname: f.originalname,
+            size: f.size,
+          };
+        }
       });
+
+      res.json({
+        success: true,
+        message: `${uploadedFiles.length} photo(s) uploaded successfully`,
+        files: uploadedFiles,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Upload failed: ' + error.message });
     }
-    return res.status(401).json({ error: 'Invalid password' });
-  }
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'No files uploaded' });
-  }
-
-  const uploadedFiles = req.files.map(f => ({
-    filename: f.filename,
-    originalname: f.originalname,
-    size: f.size,
-  }));
-
-  res.json({
-    success: true,
-    message: `${uploadedFiles.length} photo(s) uploaded successfully`,
-    files: uploadedFiles,
   });
 });
 
