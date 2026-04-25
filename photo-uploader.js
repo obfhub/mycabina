@@ -85,9 +85,9 @@ async function uploadFiles(filePaths) {
 
     if (res.ok) {
       console.log(`✅ Success! Uploaded ${data.files.length} photo(s)`);
-      filePaths.forEach(f => uploadedFiles.add(f));
     } else {
       console.error(`❌ Upload failed: ${data.error}`);
+      filePaths.forEach(f => uploadedFiles.delete(f)); // Remove from tracking if upload fails
     }
   } catch (err) {
     console.error(`❌ Network error: ${err.message}`);
@@ -135,6 +135,7 @@ const watcher = fs.watch(fullPath, async (eventType, filename) => {
         stable = true;
         clearInterval(checkStable);
         if (!uploadedFiles.has(filePath)) {
+          uploadedFiles.add(filePath); // Mark as uploaded BEFORE uploading
           uploadFiles([filePath]);
         }
       }

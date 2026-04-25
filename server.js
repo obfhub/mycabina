@@ -4,9 +4,30 @@ const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
 const multer = require('multer');
+const { S3Client, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const multerS3 = require('multer-s3');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ── Cloudflare R2 Configuration ──────────────────────────────
+const useR2 = process.env.R2_BUCKET_NAME && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY;
+
+let s3Client = null;
+if (useR2) {
+  s3Client = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+  });
+  console.log('✅ Cloudflare R2 connected');
+} else {
+  console.log('⚠️  R2 not configured - using local storage');
+}
 
 // ── Middleware ──────────────────────────────────────────────
 app.use(express.json());
@@ -24,7 +45,53 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 8 } // 8 hours
 }));
 
-// Serve event images statically
+// Serve event images (from R2 or local disk)
+app.get('/photos/:event/:filename', async (req, res) => {
+  const { event, filename } = req.params;
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+  
+  // Security: validate filename
+  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return res.status(400).send('Invalid filename');
+  }
+  
+  if (useR2 && s3Client) {
+    // Serve from R2
+    try {
+      const key = `events/${safe}/${filename}`;
+      const command = new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key,
+      });
+      
+      const response = await s3Client.send(command);
+      res.setHeader('Content-Type', response.ContentType || 'application/octet-stream');
+      response.Body.pipe(res);
+    } catch (err) {
+      console.error('Error fetching from R2:', err);
+      res.status(404).send('Photo not found');
+    }
+  } else {
+    // Serve from local disk
+    const filepath = path.join(__dirname, 'mycabina-gallery', 'events', safe, filename);
+    
+    // Security: ensure path is within events directory
+    const resolvedPath = path.resolve(filepath);
+    const allowedDir = path.resolve(path.join(__dirname, 'mycabina-gallery', 'events'));
+    
+    if (!resolvedPath.startsWith(allowedDir)) {
+      return res.status(400).send('Invalid path');
+    }
+    
+    res.sendFile(filepath, (err) => {
+      if (err) {
+        res.status(404).send('Photo not found');
+      }
+    });
+  }
+});
+
+// Fallback for backwards compatibility: /photos/* (legacy static route)
 app.use('/photos', express.static(path.join(__dirname, 'mycabina-gallery', 'events')));
 
 // ── Multer Configuration ────────────────────────────────────
@@ -33,27 +100,49 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const eventName = req.params.event;
-    const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
-    const eventDir = path.join(uploadDir, safe);
-    
-    // Ensure directory exists
-    if (!fs.existsSync(eventDir)) {
-      fs.mkdirSync(eventDir, { recursive: true });
+let storage;
+if (useR2 && s3Client) {
+  // Use R2 storage
+  storage = multerS3({
+    s3: s3Client,
+    bucket: process.env.R2_BUCKET_NAME,
+    acl: 'private',
+    metadata: (req, file, cb) => {
+      const eventName = req.params.event || 'upload';
+      cb(null, { fieldName: file.fieldname, event: eventName });
+    },
+    key: (req, file, cb) => {
+      const eventName = req.params.event;
+      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      const ext = path.extname(file.originalname);
+      const key = `events/${safe}/${timestamp}-${random}${ext}`;
+      cb(null, key);
+    },
+  });
+} else {
+  // Use local disk storage
+  storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const eventName = req.params.event;
+      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+      const eventDir = path.join(uploadDir, safe);
+      
+      if (!fs.existsSync(eventDir)) {
+        fs.mkdirSync(eventDir, { recursive: true });
+      }
+      
+      cb(null, eventDir);
+    },
+    filename: (req, file, cb) => {
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      const ext = path.extname(file.originalname);
+      cb(null, `${timestamp}-${random}${ext}`);
     }
-    
-    cb(null, eventDir);
-  },
-  filename: (req, file, cb) => {
-    // Keep original filename or generate timestamp-based name
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000);
-    const ext = path.extname(file.originalname);
-    cb(null, `${timestamp}-${random}${ext}`);
-  }
-});
+  });
+}
 
 const upload = multer({
   storage: storage,
@@ -259,57 +348,120 @@ app.get('/:event/upload', (req, res) => {
 });
 
 // Get all events (API)
-app.get('/api/admin/events', (req, res) => {
-  const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
-  
-  if (!fs.existsSync(eventsDir)) {
-    return res.json([]);
-  }
-
+app.get('/api/admin/events', async (req, res) => {
   try {
-    const folders = fs.readdirSync(eventsDir).filter(f => {
-      const fullPath = path.join(eventsDir, f);
-      return fs.statSync(fullPath).isDirectory();
-    });
-
-    const events = folders.map(folder => {
-      const eventDir = path.join(eventsDir, folder);
-      const metaFile = path.join(eventDir, 'meta.json');
-      const passFile = path.join(eventDir, 'pass.json');
-
-      let meta = {};
-      let password = null;
-      let galleryPassword = null;
-
-      try {
-        if (fs.existsSync(metaFile)) {
-          meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+    if (useR2 && s3Client) {
+      // List events from R2
+      const command = new ListObjectsV2Command({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Prefix: 'events/',
+        Delimiter: '/',
+      });
+      
+      const response = await s3Client.send(command);
+      const events = [];
+      
+      if (response.CommonPrefixes) {
+        for (const prefix of response.CommonPrefixes) {
+          const folderPath = prefix.Prefix;
+          const folder = folderPath.split('/')[1];
+          
+          // Get metadata from filesystem if available
+          const eventDir = path.join(__dirname, 'mycabina-gallery', 'events', folder);
+          let meta = {};
+          let password = null;
+          let galleryPassword = null;
+          
+          try {
+            const metaFile = path.join(eventDir, 'meta.json');
+            const passFile = path.join(eventDir, 'pass.json');
+            if (fs.existsSync(metaFile)) {
+              meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+            }
+            if (fs.existsSync(passFile)) {
+              const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
+              password = passData.password || null;
+              galleryPassword = passData.galleryPassword || null;
+            }
+          } catch (e) {
+            // Ignore errors reading metadata
+          }
+          
+          // Count images in R2
+          const imageListCmd = new ListObjectsV2Command({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Prefix: folderPath,
+          });
+          const imageResponse = await s3Client.send(imageListCmd);
+          const imageCount = imageResponse.Contents 
+            ? imageResponse.Contents.filter(obj => EVENT_IMAGE_EXTS.includes(path.extname(obj.Key).toLowerCase())).length
+            : 0;
+          
+          events.push({
+            slug: folder,
+            name: meta.name || folder.replace(/[-_]/g, ' '),
+            date: meta.date || null,
+            location: meta.location || null,
+            uploadPassword: password ? '***' : null,
+            galleryPassword: galleryPassword ? '***' : null,
+            photoCount: imageCount,
+          });
         }
-        if (fs.existsSync(passFile)) {
-          const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
-          password = passData.password || null;
-          galleryPassword = passData.galleryPassword || null;
-        }
-      } catch (e) {
-        // Ignore errors reading metadata
+      }
+      
+      res.json(events);
+    } else {
+      // List events from local filesystem
+      const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+      
+      if (!fs.existsSync(eventsDir)) {
+        return res.json([]);
       }
 
-      const images = fs.readdirSync(eventDir)
-        .filter(f => ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'].includes(path.extname(f).toLowerCase()))
-        .length;
+      const folders = fs.readdirSync(eventsDir).filter(f => {
+        const fullPath = path.join(eventsDir, f);
+        return fs.statSync(fullPath).isDirectory();
+      });
 
-      return {
-        slug: folder,
-        name: meta.name || folder.replace(/[-_]/g, ' '),
-        date: meta.date || null,
-        location: meta.location || null,
-        uploadPassword: password ? '***' : null,
-        galleryPassword: galleryPassword ? '***' : null,
-        photoCount: images,
-      };
-    });
+      const events = folders.map(folder => {
+        const eventDir = path.join(eventsDir, folder);
+        const metaFile = path.join(eventDir, 'meta.json');
+        const passFile = path.join(eventDir, 'pass.json');
 
-    res.json(events);
+        let meta = {};
+        let password = null;
+        let galleryPassword = null;
+
+        try {
+          if (fs.existsSync(metaFile)) {
+            meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+          }
+          if (fs.existsSync(passFile)) {
+            const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
+            password = passData.password || null;
+            galleryPassword = passData.galleryPassword || null;
+          }
+        } catch (e) {
+          // Ignore errors reading metadata
+        }
+
+        const images = fs.readdirSync(eventDir)
+          .filter(f => ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'].includes(path.extname(f).toLowerCase()))
+          .length;
+
+        return {
+          slug: folder,
+          name: meta.name || folder.replace(/[-_]/g, ' '),
+          date: meta.date || null,
+          location: meta.location || null,
+          uploadPassword: password ? '***' : null,
+          galleryPassword: galleryPassword ? '***' : null,
+          photoCount: images,
+        };
+      });
+
+      res.json(events);
+    }
   } catch (err) {
     console.error('Error reading events:', err);
     res.status(500).json({ error: 'Failed to read events' });
@@ -431,6 +583,36 @@ function getEventPassword(eventDir) {
   }
 }
 
+// List images from R2 bucket
+async function getEventImagesFromR2(eventName) {
+  if (!useR2 || !s3Client) return [];
+  
+  try {
+    const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+    const prefix = `events/${safe}/`;
+    
+    const command = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Prefix: prefix,
+    });
+    
+    const response = await s3Client.send(command);
+    if (!response.Contents) return [];
+    
+    return response.Contents
+      .map(obj => {
+        const key = obj.Key;
+        const filename = key.split('/').pop();
+        return filename;
+      })
+      .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()) && !f.startsWith('.'))
+      .sort();
+  } catch (err) {
+    console.error('Error listing R2 objects:', err);
+    return [];
+  }
+}
+
 function getEventImages(eventDir, eventName) {
   if (!fs.existsSync(eventDir)) return [];
   return fs.readdirSync(eventDir)
@@ -536,8 +718,22 @@ app.get('/:event', (req, res, next) => {
     return res.send(renderLoginPage(safe, hasError));
   }
 
-  const images = getEventImages(eventDir, safe);
-  return res.send(renderGalleryPage(safe, images));
+  // Load images from R2 if available, otherwise from disk
+  (async () => {
+    try {
+      let images;
+      if (useR2) {
+        const filenames = await getEventImagesFromR2(safe);
+        images = filenames.map(f => `/photos/${safe}/${f}`);
+      } else {
+        images = getEventImages(eventDir, safe);
+      }
+      return res.send(renderGalleryPage(safe, images));
+    } catch (err) {
+      console.error('Error loading gallery:', err);
+      return res.send(renderGalleryPage(safe, []));
+    }
+  })();
 });
 
 function renderLoginPage(eventName, hasError) {
