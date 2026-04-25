@@ -159,6 +159,7 @@ const upload = multer({
 
 // ── Helpers ─────────────────────────────────────────────────
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
+const EVENT_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
 
 function isImage(filename) {
   return IMAGE_EXTS.has(path.extname(filename).toLowerCase());
@@ -564,7 +565,6 @@ app.post('/api/admin/delete-event', (req, res) => {
 // ─── EVENT GALLERY ROUTES ────────────────────────────────────
 
 const EVENTS_DIR = path.join(__dirname, 'mycabina-gallery', 'events');
-const EVENT_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
 
 function getEventDir(eventName) {
   const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
