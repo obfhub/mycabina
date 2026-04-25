@@ -42,8 +42,8 @@ app.use(session({
 
 // Helper: get event folder path
 function getEventDir(eventName) {
-  // Sanitize: only allow alphanumeric, dash, underscore
-  const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+  // Sanitize: only allow alphanumeric, dash, underscore + convert to lowercase
+  const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
   return path.join(EVENTS_DIR, safe);
 }
 
@@ -72,6 +72,7 @@ function getEventImages(eventDir, eventName) {
 app.post('/:event/login', (req, res) => {
   const { event } = req.params;
   const { password } = req.body;
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
   const eventDir = getEventDir(event);
 
   if (!fs.existsSync(eventDir)) {
@@ -84,25 +85,26 @@ app.post('/:event/login', (req, res) => {
   }
 
   if (password === correctPassword) {
-    req.session[`auth_${event}`] = true;
-    return res.redirect(`/${event}`);
+    req.session[`auth_${safe}`] = true;
+    return res.redirect(`/${safe}`);
   } else {
-    return res.redirect(`/${event}?error=1`);
+    return res.redirect(`/${safe}?error=1`);
   }
 });
 
 // Logout
 app.get('/:event/logout', (req, res) => {
   const { event } = req.params;
-  req.session[`auth_${event}`] = false;
-  res.redirect(`/${event}`);
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
+  req.session[`auth_${safe}`] = false;
+  res.redirect(`/${safe}`);
 });
 
 // Main gallery route
 app.get('/:event', (req, res) => {
   const { event } = req.params;
-  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
-  const eventDir = getEventDir(safe);
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
+  const eventDir = getEventDir(event);
 
   if (!fs.existsSync(eventDir)) {
     return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));

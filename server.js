@@ -47,7 +47,7 @@ app.use(session({
 // Serve event images (from R2 or local disk)
 app.get('/photos/:event/:filename', async (req, res) => {
   const { event, filename } = req.params;
-  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
   
   // Security: validate filename
   if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -112,7 +112,7 @@ if (useR2 && s3Client) {
     },
     key: (req, file, cb) => {
       const eventName = req.params.event;
-      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
       const timestamp = Date.now();
       const random = Math.floor(Math.random() * 10000);
       const ext = path.extname(file.originalname);
@@ -125,7 +125,7 @@ if (useR2 && s3Client) {
   storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const eventName = req.params.event;
-      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+      const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
       const eventDir = path.join(uploadDir, safe);
       
       if (!fs.existsSync(eventDir)) {
@@ -567,7 +567,7 @@ app.post('/api/admin/delete-event', (req, res) => {
 const EVENTS_DIR = path.join(__dirname, 'mycabina-gallery', 'events');
 
 function getEventDir(eventName) {
-  const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '');
+  const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
   return path.join(EVENTS_DIR, safe);
 }
 
@@ -625,6 +625,7 @@ app.post('/:event/login', (req, res) => {
   const { event } = req.params;
   const { password } = req.body;
   const eventDir = getEventDir(event);
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
   if (!fs.existsSync(eventDir)) {
     return res.status(404).send('Event not found');
@@ -636,18 +637,19 @@ app.post('/:event/login', (req, res) => {
   }
 
   if (password === correctPassword) {
-    req.session[`auth_${event}`] = true;
-    return res.redirect(`/${event}`);
+    req.session[`auth_${safe}`] = true;
+    return res.redirect(`/${safe}`);
   } else {
-    return res.redirect(`/${event}?error=1`);
+    return res.redirect(`/${safe}?error=1`);
   }
 });
 
 // Logout
 app.get('/:event/logout', (req, res) => {
   const { event } = req.params;
-  req.session[`auth_${event}`] = false;
-  res.redirect(`/${event}`);
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
+  req.session[`auth_${safe}`] = false;
+  res.redirect(`/${safe}`);
 });
 
 // Upload endpoint
@@ -702,8 +704,8 @@ app.get('/:event', (req, res, next) => {
   }
   
   const event = req.params.event;
-  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '');
-  const eventDir = getEventDir(safe);
+  const eventDir = getEventDir(event);
+  const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
   if (!fs.existsSync(eventDir)) {
     return next(); // Pass to 404 handler
