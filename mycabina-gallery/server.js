@@ -714,8 +714,8 @@ function renderGalleryPage(eventName, images) {
 
 <header>
   <a href="https://mycabina.com" class="header-logo" title="MyCabina">
-    <img src="data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%236b3e1d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='2' y='2' width='20' height='20' rx='5'/%3E%3Ccircle cx='12' cy='12' r='3.5'/%3E%3Ccircle cx='17.5' cy='6.5' r='1' fill='%236b3e1d'/%3E%3C/svg%3E" alt="MyCabina icon" class="logo-icon" />
-    <img src="data:image/svg+xml,%3Csvg viewBox='0 0 60 30' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-family='Cormorant Garamond, Georgia, serif' font-size='16' font-weight='300' fill='%236b3e1d' text-anchor='middle' dominant-baseline='middle' letter-spacing='0.02em'%3EMyCabina%3C/text%3E%3C/svg%3E" alt="MyCabina" class="logo-text" />
+    <img src="../../doarcabina.svg" alt="MyCabina icon" class="logo-icon" />
+    <img src="../../mycabinatext.svg" alt="MyCabina" class="logo-text" />
   </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
