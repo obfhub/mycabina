@@ -1701,12 +1701,20 @@ function renderGalleryPage(eventName, images) {
       justify-content: space-between;
     }
     .header-logo {
-      font-family: var(--serif);
-      font-size: 1.3rem;
-      font-weight: 300;
-      color: var(--brown);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       text-decoration: none;
-      letter-spacing: .04em;
+    }
+    .header-logo svg {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      flex-shrink: 0;
+      transition: opacity .2s;
+    }
+    .header-logo:hover svg {
+      opacity: .8;
     }
     .header-right {
       display: flex;
@@ -1730,6 +1738,36 @@ function renderGalleryPage(eventName, images) {
       transition: all .2s;
     }
     .btn-logout:hover { color: var(--brown); border-color: var(--brown-pale); }
+    .lb-social {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .lb-share-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(107,62,29,.8);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      text-decoration: none;
+    }
+    .lb-share-btn:hover {
+      background: rgba(139,90,43,.9);
+      transform: scale(1.1);
+    }
+    .lb-share-btn svg {
+      width: 18px;
+      height: 18px;
+    }
     .gallery-hero {
       position: relative;
       z-index: 1;
@@ -1878,7 +1916,17 @@ function renderGalleryPage(eventName, images) {
 </head>
 <body>
 <header>
-  <a href="https://mycabina.com" class="header-logo">MyCabina</a>
+  <a href="https://mycabina.com" class="header-logo" title="MyCabina">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5"/>
+      <circle cx="12" cy="12" r="3.5"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="#6b3e1d"/>
+    </svg>
+    <svg viewBox="0 0 24 24" fill="#6b3e1d">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#6b3e1d" stroke-width="1.5"/>
+      <path d="M12 8v8m4-4h-8" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
     <a href="/${eventName}/logout" class="btn-logout">Ieși</a>
@@ -1905,6 +1953,20 @@ ${images.length > 0 ? `
   <button class="lb-nav lb-prev" onclick="changeSlide(-1)">‹</button>
   ${lightboxImgs}
   <button class="lb-nav lb-next" onclick="changeSlide(1)">›</button>
+  <div class="lb-social" id="lb-social">
+    <button class="lb-share-btn" onclick="shareToInstagram()" title="Add to Instagram Story">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+      </svg>
+    </button>
+    <button class="lb-share-btn" onclick="shareToFacebook()" title="Add to Facebook Story">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    </button>
+  </div>
   <div class="lb-counter" id="lb-counter">1 / ${images.length}</div>
 </div>
 <footer>
@@ -1945,6 +2007,19 @@ ${images.length > 0 ? `
     const dx = e.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
   });
+  
+  function shareToInstagram() {
+    const instagramUrl = 'instagram://share?url=' + encodeURIComponent(window.location.href);
+    window.location.href = instagramUrl;
+    setTimeout(() => {
+      window.open('https://www.instagram.com/', '_blank');
+    }, 1000);
+  }
+  
+  function shareToFacebook() {
+    const facebookShareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
+    window.open(facebookShareUrl, 'facebook-share-dialog', 'width=626,height=436');
+  }
 </script>
 </body>
 </html>`;
