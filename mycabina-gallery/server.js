@@ -411,17 +411,30 @@ function renderGalleryPage(eventName, images) {
     .header-logo {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.3rem;
       text-decoration: none;
     }
-    .header-logo svg {
-      width: 32px;
+    .header-logo img {
       height: 32px;
-      min-width: 32px;
+      width: auto;
+      max-width: 100px;
+      display: block;
       flex-shrink: 0;
-      transition: opacity .2s;
     }
-    .header-logo:hover svg {
+    .header-logo .logo-icon {
+      height: 32px;
+      width: auto;
+      display: block;
+      flex-shrink: 0;
+    }
+    .header-logo .logo-text {
+      height: 32px;
+      width: auto;
+      display: block;
+      flex-shrink: 0;
+      margin-left: -8px;
+    }
+    .header-logo:hover img {
       opacity: .8;
     }
     .header-right {
@@ -701,15 +714,8 @@ function renderGalleryPage(eventName, images) {
 
 <header>
   <a href="https://mycabina.com" class="header-logo" title="MyCabina">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5"/>
-      <circle cx="12" cy="12" r="3.5"/>
-      <circle cx="17.5" cy="6.5" r="1" fill="#6b3e1d"/>
-    </svg>
-    <svg viewBox="0 0 24 24" fill="#6b3e1d">
-      <circle cx="12" cy="12" r="9" fill="none" stroke="#6b3e1d" stroke-width="1.5"/>
-      <path d="M12 8v8m4-4h-8" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
+    <img src="data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%236b3e1d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='2' y='2' width='20' height='20' rx='5'/%3E%3Ccircle cx='12' cy='12' r='3.5'/%3E%3Ccircle cx='17.5' cy='6.5' r='1' fill='%236b3e1d'/%3E%3C/svg%3E" alt="MyCabina icon" class="logo-icon" />
+    <img src="data:image/svg+xml,%3Csvg viewBox='0 0 60 30' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-family='Cormorant Garamond, Georgia, serif' font-size='16' font-weight='300' fill='%236b3e1d' text-anchor='middle' dominant-baseline='middle' letter-spacing='0.02em'%3EMyCabina%3C/text%3E%3C/svg%3E" alt="MyCabina" class="logo-text" />
   </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
