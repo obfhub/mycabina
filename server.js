@@ -1067,13 +1067,70 @@ app.post('/api/admin/delete-event', (req, res) => {
   }
 
   try {
+    // Try to remove the directory recursively
     fs.rmSync(eventDir, { recursive: true, force: true });
+    
+    // Also try to delete from R2 if enabled
+    if (useR2 && s3Client) {
+      deleteEventFromR2(slug).catch(err => {
+        console.log('[DEBUG] R2 deletion not critical, local deletion succeeded');
+      });
+    }
+    
+    console.log('[DELETE] Event deleted:', slug);
     res.json({ success: true, message: 'Event deleted' });
   } catch (err) {
-    console.error('Error deleting event:', err);
-    res.status(500).json({ error: 'Failed to delete event' });
+    console.error('[DELETE] Error deleting event:', slug, err.message);
+    res.status(500).json({ error: 'Failed to delete event: ' + err.message });
   }
 });
+
+// Helper to delete event from R2
+async function deleteEventFromR2(slug) {
+  if (!s3Client) return;
+  
+  try {
+    // Delete all objects in events/{slug}/ prefix
+    const listCmd = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Prefix: `events/${slug}/`,
+    });
+    
+    const listRes = await s3Client.send(listCmd);
+    
+    if (listRes.Contents) {
+      for (const obj of listRes.Contents) {
+        const delCmd = new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: obj.Key,
+        });
+        await s3Client.send(delCmd);
+      }
+    }
+    
+    // Delete metadata folder
+    const metaListCmd = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Prefix: `_metadata/${slug}/`,
+    });
+    
+    const metaRes = await s3Client.send(metaListCmd);
+    
+    if (metaRes.Contents) {
+      for (const obj of metaRes.Contents) {
+        const delCmd = new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: obj.Key,
+        });
+        await s3Client.send(delCmd);
+      }
+    }
+    
+    console.log('[DELETE] Event deleted from R2:', slug);
+  } catch (err) {
+    console.error('[DELETE] Error deleting from R2:', err.message);
+  }
+}
 
 // ─── EVENT GALLERY ROUTES ────────────────────────────────────
 
