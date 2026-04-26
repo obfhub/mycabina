@@ -408,12 +408,18 @@ function renderGalleryPage(eventName, images) {
       justify-content: space-between;
     }
     .header-logo {
-      font-family: var(--serif);
-      font-size: 1.3rem;
-      font-weight: 300;
-      color: var(--brown);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       text-decoration: none;
-      letter-spacing: .04em;
+    }
+    .header-logo svg {
+      width: 32px;
+      height: 32px;
+      transition: opacity .2s;
+    }
+    .header-logo:hover svg {
+      opacity: .8;
     }
     .header-right {
       display: flex;
@@ -631,6 +637,38 @@ function renderGalleryPage(eventName, images) {
     .lb-download:hover { background: rgba(139,90,43,.9); }
     .lb-download svg { width: 13px; height: 13px; }
 
+    /* SOCIAL SHARE */
+    .lb-social {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .lb-share-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(107,62,29,.8);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      text-decoration: none;
+    }
+    .lb-share-btn:hover {
+      background: rgba(139,90,43,.9);
+      transform: scale(1.1);
+    }
+    .lb-share-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
     /* FOOTER */
     footer {
       position: relative;
@@ -659,7 +697,17 @@ function renderGalleryPage(eventName, images) {
 <body>
 
 <header>
-  <a href="https://mycabina.com" class="header-logo">MyCabina</a>
+  <a href="https://mycabina.com" class="header-logo" title="MyCabina">
+    <svg viewBox="0 0 24 24" fill="currentColor" color="var(--brown)">
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+    </svg>
+    <svg viewBox="0 0 24 24" fill="currentColor" color="var(--brown)">
+      <path fill="none" stroke="currentColor" stroke-width="1.5" d="M7 12a5 5 0 1 0 10 0 5 5 0 0 0-10 0z"/>
+      <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm3.5 11.5H12v3.5h-1v-3.5H8v-1h3V9h1v3.5h3.5v1z"/>
+    </svg>
+  </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
     <a href="/${eventName}/logout" class="btn-logout">Ieși</a>
@@ -699,7 +747,6 @@ ${images.length > 0 ? `
 </div>
 `}
 
-<!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <button class="lb-close" onclick="closeLightbox()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -717,6 +764,20 @@ ${images.length > 0 ? `
       <polyline points="9 18 15 12 9 6"/>
     </svg>
   </button>
+  <div class="lb-social" id="lb-social">
+    <button class="lb-share-btn" onclick="shareToInstagram()" title="Add to Instagram Story">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+      </svg>
+    </button>
+    <button class="lb-share-btn" onclick="shareToFacebook()" title="Add to Facebook Story">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    </button>
+  </div>
   <div class="lb-counter" id="lb-counter">1 / ${images.length}</div>
   <a class="lb-download" id="lb-dl" href="#" download>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -788,6 +849,28 @@ ${images.length > 0 ? `
         a.click();
       }, i * 200);
     });
+  }
+
+  // Share to Instagram Story
+  function shareToInstagram() {
+    const currentImage = images[current];
+    const instagramUrl = 'instagram://share?url=' + encodeURIComponent(window.location.href);
+    
+    // Try to open Instagram with the share URL
+    window.location.href = instagramUrl;
+    
+    // Fallback after short delay - direct user to Instagram
+    setTimeout(() => {
+      window.open('https://www.instagram.com/', '_blank');
+    }, 1000);
+  }
+
+  // Share to Facebook Story
+  function shareToFacebook() {
+    const currentImage = images[current];
+    const facebookShareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
+    
+    window.open(facebookShareUrl, 'facebook-share-dialog', 'width=626,height=436');
   }
 </script>
 </body>
