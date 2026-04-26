@@ -454,10 +454,236 @@ app.get('/galerie/*', (req, res) => {
 
 // ─── ADMIN ROUTES ──────────────────────────────────────────────
 
-// Serve admin page
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+// Serve admin login/page
 app.get('/admin', (req, res) => {
+  const sessionKey = 'admin_authenticated';
+  const isAuthenticated = req.session[sessionKey] === true;
+  
+  if (!isAuthenticated) {
+    // Serve login page
+    return res.send(renderAdminLoginPage());
+  }
+  
+  // Serve admin page
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
+
+// Admin login endpoint
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  
+  if (!password || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+  
+  req.session['admin_authenticated'] = true;
+  res.json({ success: true });
+});
+
+// Admin logout endpoint
+app.get('/admin/logout', (req, res) => {
+  req.session['admin_authenticated'] = false;
+  res.redirect('/admin');
+});
+
+// Helper to render admin login page
+function renderAdminLoginPage() {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>MyCabina Admin — Login</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+          --serif: 'Cormorant Garamond', Georgia, serif;
+          --sans: 'DM Sans', system-ui, sans-serif;
+          --brown: #6b3e1d;
+          --brown-light: #8b5a2b;
+          --brown-pale: #d8b98a;
+          --cream: #f7f2ea;
+          --cream-dark: #eee4d2;
+          --ink: #1a140e;
+          --ink-mid: #4b3a2a;
+          --ink-soft: #8c7a63;
+          --white: #ffffff;
+          --error: #9b2c2c;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+          font-family: var(--sans);
+          background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+          color: var(--ink);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+        .login-container {
+          background: var(--white);
+          border-radius: 8px;
+          padding: 3rem;
+          max-width: 400px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(26, 20, 14, 0.3);
+        }
+        .login-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+        .login-header h1 {
+          font-family: var(--serif);
+          font-size: 2rem;
+          font-weight: 300;
+          color: var(--brown);
+          margin-bottom: 0.5rem;
+        }
+        .login-header p {
+          font-size: 0.9rem;
+          color: var(--ink-soft);
+        }
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+        .form-group label {
+          display: block;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--ink-mid);
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+        }
+        .form-group input {
+          width: 100%;
+          padding: 0.85rem 1rem;
+          border: 1px solid var(--cream-dark);
+          border-radius: 4px;
+          background: var(--cream);
+          font-family: var(--sans);
+          font-size: 0.95rem;
+          color: var(--ink);
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+          border-color: var(--brown-pale);
+          box-shadow: 0 0 0 3px rgba(216, 185, 138, 0.2);
+        }
+        .btn {
+          width: 100%;
+          padding: 0.85rem;
+          background: var(--brown);
+          color: var(--white);
+          border: none;
+          border-radius: 4px;
+          font-family: var(--sans);
+          font-size: 0.95rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+        .btn:hover {
+          background: var(--brown-light);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(107, 62, 29, 0.25);
+        }
+        .btn:active {
+          transform: translateY(0);
+        }
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .error {
+          background: #fdf2f2;
+          color: var(--error);
+          padding: 1rem;
+          border-radius: 4px;
+          border-left: 3px solid var(--error);
+          margin-bottom: 1.5rem;
+          display: none;
+          font-size: 0.9rem;
+        }
+        .error.show {
+          display: block;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-container">
+        <div class="login-header">
+          <h1>MyCabina Admin</h1>
+          <p>Enter your admin password to continue</p>
+        </div>
+        
+        <div id="errorMessage" class="error"></div>
+        
+        <form id="adminLoginForm">
+          <div class="form-group">
+            <label for="adminPassword">Admin Password</label>
+            <input 
+              type="password" 
+              id="adminPassword" 
+              name="adminPassword" 
+              placeholder="Enter password"
+              required
+              autofocus
+            />
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+      </div>
+
+      <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const password = document.getElementById('adminPassword').value;
+          const errorDiv = document.getElementById('errorMessage');
+          const btn = e.target.querySelector('button');
+          
+          try {
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            
+            const response = await fetch('/api/admin/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password })
+            });
+            
+            if (response.ok) {
+              window.location.href = '/admin';
+            } else {
+              const error = await response.json();
+              errorDiv.textContent = error.error || 'Invalid password';
+              errorDiv.classList.add('show');
+              btn.disabled = false;
+              btn.textContent = 'Login';
+              document.getElementById('adminPassword').focus();
+            }
+          } catch (err) {
+            errorDiv.textContent = 'Network error: ' + err.message;
+            errorDiv.classList.add('show');
+            btn.disabled = false;
+            btn.textContent = 'Login';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+}
 
 // Serve upload page
 app.get('/upload.html', (req, res) => {
