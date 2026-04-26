@@ -1,11 +1,10 @@
-// Gallery updated - logo display fix
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3001; // Gallery on port 3001
+const PORT = process.env.PORT || 3000;
 const EVENTS_DIR = path.join(__dirname, 'events');
 
 // Supported image extensions
@@ -15,8 +14,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve logo files from parent directory
-app.use('/logos', express.static(path.join(__dirname, '..')));
+// Serve SVG logo
+app.get('/MyCabina.svg', (req, res) => {
+  res.sendFile(path.join(__dirname, 'MyCabina.svg'));
+});
 
 // Serve event images statically (no auth needed on static route)
 app.use('/photos', express.static(EVENTS_DIR));
@@ -198,14 +199,18 @@ function renderLoginPage(eventName, hasError) {
     .login-logo {
       text-align: center;
       margin-bottom: 2.5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
-    .login-logo img {
-      max-height: 80px;
-      width: auto;
-      margin-bottom: 1rem;
+    .login-logo a {
+      text-decoration: none;
+      display: inline-block;
+      max-width: 200px;
+      height: auto;
+    }
+    .login-logo img,
+    .login-logo svg {
+      width: 100%;
+      height: auto;
+      display: block;
     }
     .login-card {
       background: #fff;
@@ -316,9 +321,15 @@ function renderLoginPage(eventName, hasError) {
 <body>
   <div class="login-wrap">
     <div class="login-logo">
-      <img src="/logos/MyCabina.svg" alt="MyCabina" style="max-height: 80px; width: auto; margin-bottom: 1rem;" />
+      <a href="https://mycabina.com"><img src="/MyCabina.svg" alt="MyCabina" /></a>
     </div>
     <div class="login-card">
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
       <p class="event-tag">Galerie privată</p>
       <h1 class="login-title">${displayName}</h1>
       <div class="divider"></div>
@@ -406,22 +417,16 @@ function renderGalleryPage(eventName, images) {
       justify-content: space-between;
     }
     .header-logo {
-      display: flex;
-      align-items: center;
-      gap: 0;
       text-decoration: none;
-      flex-shrink: 0;
+      display: inline-block;
+      max-width: 120px;
+      height: auto;
     }
     .header-logo img {
-      height: 40px;
-      width: auto;
-      max-width: 150px;
+      width: 100%;
+      height: auto;
       display: block;
-      flex-shrink: 0;
-      transition: opacity .2s;
     }
-    .header-logo:hover img {
-      opacity: .8;
     }
     .header-right {
       display: flex;
@@ -578,19 +583,6 @@ function renderGalleryPage(eventName, images) {
       backdrop-filter: blur(8px);
     }
     .lightbox.open { display: flex; }
-    
-    /* Ensure social buttons are hidden when lightbox is not open */
-    .lb-social {
-      position: fixed;
-      bottom: 1.5rem;
-      left: 1.5rem;
-      display: none;
-      align-items: center;
-      gap: .8rem;
-    }
-    .lightbox.open .lb-social {
-      display: flex;
-    }
     .lb-slide { display: none; max-width: 90vw; max-height: 90dvh; }
     .lb-slide.active { display: flex; align-items: center; justify-content: center; }
     .lb-slide img { max-width: 90vw; max-height: 90dvh; object-fit: contain; border-radius: 2px; }
@@ -651,29 +643,6 @@ function renderGalleryPage(eventName, images) {
     }
     .lb-download:hover { background: rgba(139,90,43,.9); }
     .lb-download svg { width: 13px; height: 13px; }
-    
-    .lb-share-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(107,62,29,.8);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      transition: background .2s, transform .15s;
-      text-decoration: none;
-    }
-    .lb-share-btn:hover {
-      background: rgba(139,90,43,.9);
-      transform: scale(1.1);
-    }
-    .lb-share-btn svg {
-      width: 18px;
-      height: 18px;
-    }
 
     /* FOOTER */
     footer {
@@ -703,9 +672,7 @@ function renderGalleryPage(eventName, images) {
 <body>
 
 <header>
-  <a href="https://mycabina.com" class="header-logo" title="MyCabina">
-    <img src="/logos/MyCabina.svg" alt="MyCabina" style="max-height: 40px; width: auto;" />
-  </a>
+  <a href="https://mycabina.com" class="header-logo"><img src="/MyCabina.svg" alt="MyCabina" /></a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
     <a href="/${eventName}/logout" class="btn-logout">Ieși</a>
@@ -745,6 +712,7 @@ ${images.length > 0 ? `
 </div>
 `}
 
+<!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <button class="lb-close" onclick="closeLightbox()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -762,20 +730,6 @@ ${images.length > 0 ? `
       <polyline points="9 18 15 12 9 6"/>
     </svg>
   </button>
-  <div class="lb-social" id="lb-social">
-    <button class="lb-share-btn" onclick="shareToInstagram()" title="Add to Instagram Story">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="2" y="2" width="20" height="20" rx="5"/>
-        <circle cx="12" cy="12" r="3.5"/>
-        <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
-      </svg>
-    </button>
-    <button class="lb-share-btn" onclick="shareToFacebook()" title="Add to Facebook Story">
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-      </svg>
-    </button>
-  </div>
   <div class="lb-counter" id="lb-counter">1 / ${images.length}</div>
   <a class="lb-download" id="lb-dl" href="#" download>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -847,69 +801,6 @@ ${images.length > 0 ? `
         a.click();
       }, i * 200);
     });
-  }
-
-  // Share to Instagram Story
-  function shareToInstagram() {
-    const currentImage = images[current];
-    
-    // For mobile: use Web Share API if available
-    if (navigator.share) {
-      fetch(currentImage)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'mycabina-photo.jpg', { type: 'image/jpeg' });
-          navigator.share({
-            files: [file],
-            title: 'MyCabina Photo',
-            text: 'Check out this memory from MyCabina!'
-          }).catch(err => {
-            // User may have cancelled - that's ok
-            console.log('Share cancelled or not supported');
-          });
-        })
-        .catch(() => fallbackInstagramShare());
-    } else {
-      // Fallback for desktop and unsupported mobile browsers
-      fallbackInstagramShare();
-    }
-  }
-
-  function fallbackInstagramShare() {
-    // Open Instagram directly with intent to share
-    const instagramUrl = 'https://www.instagram.com/';
-    
-    // Check if Instagram app is installed on mobile
-    const isStandalone = window.navigator.standalone === true;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isAndroid = /Android/.test(navigator.userAgent);
-    
-    if (isAndroid || isIOS) {
-      // Try to open Instagram app
-      const instagramAppUrl = 'instagram://share?url=' + encodeURIComponent(window.location.href);
-      const timeout = setTimeout(() => {
-        // If app doesn't open in 1.5 seconds, open web version
-        window.open(instagramUrl, '_blank');
-      }, 1500);
-      
-      window.location.href = instagramAppUrl;
-      
-      // Fallback in case the app is not installed
-      window.addEventListener('blur', () => {
-        clearTimeout(timeout);
-      }, { once: true });
-    } else {
-      // Desktop - open Instagram in new tab
-      window.open(instagramUrl, '_blank');
-    }
-  }
-
-  // Share to Facebook Story
-  function shareToFacebook() {
-    const currentImage = images[current];
-    const facebookShareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
-    
-    window.open(facebookShareUrl, 'facebook-share-dialog', 'width=626,height=436');
   }
 </script>
 </body>
