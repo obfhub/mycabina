@@ -454,10 +454,236 @@ app.get('/galerie/*', (req, res) => {
 
 // ─── ADMIN ROUTES ──────────────────────────────────────────────
 
-// Serve admin page
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+// Serve admin login/page
 app.get('/admin', (req, res) => {
+  const sessionKey = 'admin_authenticated';
+  const isAuthenticated = req.session[sessionKey] === true;
+  
+  if (!isAuthenticated) {
+    // Serve login page
+    return res.send(renderAdminLoginPage());
+  }
+  
+  // Serve admin page
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
+
+// Admin login endpoint
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  
+  if (!password || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid admin password' });
+  }
+  
+  req.session['admin_authenticated'] = true;
+  res.json({ success: true });
+});
+
+// Admin logout endpoint
+app.get('/admin/logout', (req, res) => {
+  req.session['admin_authenticated'] = false;
+  res.redirect('/admin');
+});
+
+// Helper to render admin login page
+function renderAdminLoginPage() {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>MyCabina Admin — Login</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+          --serif: 'Cormorant Garamond', Georgia, serif;
+          --sans: 'DM Sans', system-ui, sans-serif;
+          --brown: #6b3e1d;
+          --brown-light: #8b5a2b;
+          --brown-pale: #d8b98a;
+          --cream: #f7f2ea;
+          --cream-dark: #eee4d2;
+          --ink: #1a140e;
+          --ink-mid: #4b3a2a;
+          --ink-soft: #8c7a63;
+          --white: #ffffff;
+          --error: #9b2c2c;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+          font-family: var(--sans);
+          background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
+          color: var(--ink);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+        .login-container {
+          background: var(--white);
+          border-radius: 8px;
+          padding: 3rem;
+          max-width: 400px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(26, 20, 14, 0.3);
+        }
+        .login-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+        .login-header h1 {
+          font-family: var(--serif);
+          font-size: 2rem;
+          font-weight: 300;
+          color: var(--brown);
+          margin-bottom: 0.5rem;
+        }
+        .login-header p {
+          font-size: 0.9rem;
+          color: var(--ink-soft);
+        }
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+        .form-group label {
+          display: block;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--ink-mid);
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+        }
+        .form-group input {
+          width: 100%;
+          padding: 0.85rem 1rem;
+          border: 1px solid var(--cream-dark);
+          border-radius: 4px;
+          background: var(--cream);
+          font-family: var(--sans);
+          font-size: 0.95rem;
+          color: var(--ink);
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+          border-color: var(--brown-pale);
+          box-shadow: 0 0 0 3px rgba(216, 185, 138, 0.2);
+        }
+        .btn {
+          width: 100%;
+          padding: 0.85rem;
+          background: var(--brown);
+          color: var(--white);
+          border: none;
+          border-radius: 4px;
+          font-family: var(--sans);
+          font-size: 0.95rem;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+        .btn:hover {
+          background: var(--brown-light);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(107, 62, 29, 0.25);
+        }
+        .btn:active {
+          transform: translateY(0);
+        }
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .error {
+          background: #fdf2f2;
+          color: var(--error);
+          padding: 1rem;
+          border-radius: 4px;
+          border-left: 3px solid var(--error);
+          margin-bottom: 1.5rem;
+          display: none;
+          font-size: 0.9rem;
+        }
+        .error.show {
+          display: block;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-container">
+        <div class="login-header">
+          <h1>MyCabina Admin</h1>
+          <p>Enter your admin password to continue</p>
+        </div>
+        
+        <div id="errorMessage" class="error"></div>
+        
+        <form id="adminLoginForm">
+          <div class="form-group">
+            <label for="adminPassword">Admin Password</label>
+            <input 
+              type="password" 
+              id="adminPassword" 
+              name="adminPassword" 
+              placeholder="Enter password"
+              required
+              autofocus
+            />
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+      </div>
+
+      <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const password = document.getElementById('adminPassword').value;
+          const errorDiv = document.getElementById('errorMessage');
+          const btn = e.target.querySelector('button');
+          
+          try {
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            
+            const response = await fetch('/api/admin/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password })
+            });
+            
+            if (response.ok) {
+              window.location.href = '/admin';
+            } else {
+              const error = await response.json();
+              errorDiv.textContent = error.error || 'Invalid password';
+              errorDiv.classList.add('show');
+              btn.disabled = false;
+              btn.textContent = 'Login';
+              document.getElementById('adminPassword').focus();
+            }
+          } catch (err) {
+            errorDiv.textContent = 'Network error: ' + err.message;
+            errorDiv.classList.add('show');
+            btn.disabled = false;
+            btn.textContent = 'Login';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+}
 
 // Serve upload page
 app.get('/upload.html', (req, res) => {
@@ -475,11 +701,11 @@ app.get('/api/admin/events', async (req, res) => {
     console.log('[DEBUG] /api/admin/events called, useR2:', !!useR2);
     
     if (useR2 && s3Client) {
-      // List events from R2
+      // List events from R2 _metadata folder
       try {
         const command = new ListObjectsV2Command({
           Bucket: process.env.R2_BUCKET_NAME,
-          Prefix: 'events/',
+          Prefix: '_metadata/',
           Delimiter: '/',
         });
         
@@ -489,17 +715,100 @@ app.get('/api/admin/events', async (req, res) => {
         if (response.CommonPrefixes) {
           for (const prefix of response.CommonPrefixes) {
             const folderPath = prefix.Prefix;
-            const folder = folderPath.split('/')[1];
+            const slug = folderPath.split('/')[1];
             
-            // Get metadata from filesystem if available
-            const eventDir = path.join(__dirname, 'mycabina-gallery', 'events', folder);
+            // Get metadata from R2
             let meta = {};
             let password = null;
             let galleryPassword = null;
             
             try {
-              const metaFile = path.join(eventDir, 'meta.json');
-              const passFile = path.join(eventDir, 'pass.json');
+              // Try to get meta.json from R2
+              const metaKey = `_metadata/${slug}/meta.json`;
+              const metaCmd = new GetObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: metaKey,
+              });
+              
+              const metaResponse = await s3Client.send(metaCmd);
+              const metaText = await metaResponse.Body.transformToString();
+              meta = JSON.parse(metaText);
+              
+              // Try to get pass.json from R2
+              const passKey = `_metadata/${slug}/pass.json`;
+              const passCmd = new GetObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: passKey,
+              });
+              
+              const passResponse = await s3Client.send(passCmd);
+              const passText = await passResponse.Body.transformToString();
+              const passData = JSON.parse(passText);
+              password = passData.password || null;
+              galleryPassword = passData.galleryPassword || null;
+            } catch (e) {
+              console.log('[DEBUG] Could not read metadata for', slug, ':', e.message);
+            }
+            
+            // Count images in R2
+            const imageListCmd = new ListObjectsV2Command({
+              Bucket: process.env.R2_BUCKET_NAME,
+              Prefix: `events/${slug}/`,
+            });
+            
+            try {
+              const imageResponse = await s3Client.send(imageListCmd);
+              const imageCount = imageResponse.Contents 
+                ? imageResponse.Contents.filter(obj => EVENT_IMAGE_EXTS.includes(path.extname(obj.Key).toLowerCase())).length
+                : 0;
+              
+              events.push({
+                slug: slug,
+                name: meta.name || slug.replace(/[-_]/g, ' '),
+                date: meta.date || null,
+                location: meta.location || null,
+                uploadPassword: password ? '***' : null,
+                galleryPassword: galleryPassword ? '***' : null,
+                photoCount: imageCount,
+              });
+            } catch (imgErr) {
+              console.log('[DEBUG] Could not count images for', slug);
+              events.push({
+                slug: slug,
+                name: meta.name || slug.replace(/[-_]/g, ' '),
+                date: meta.date || null,
+                location: meta.location || null,
+                uploadPassword: password ? '***' : null,
+                galleryPassword: galleryPassword ? '***' : null,
+                photoCount: 0,
+              });
+            }
+          }
+        }
+        
+        console.log('[DEBUG] R2 events found:', events.length);
+        
+        // Also check local filesystem for any local-only events
+        const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+        if (fs.existsSync(eventsDir)) {
+          const folders = fs.readdirSync(eventsDir).filter(f => {
+            const fullPath = path.join(eventsDir, f);
+            return fs.statSync(fullPath).isDirectory();
+          });
+          
+          for (const folder of folders) {
+            // Skip if already in R2 events
+            if (events.find(e => e.slug === folder)) continue;
+            
+            const eventDir = path.join(eventsDir, folder);
+            const metaFile = path.join(eventDir, 'meta.json');
+            const passFile = path.join(eventDir, 'pass.json');
+
+            let meta = {};
+            let password = null;
+            let galleryPassword = null;
+
+            try {
               if (fs.existsSync(metaFile)) {
                 meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
               }
@@ -509,19 +818,13 @@ app.get('/api/admin/events', async (req, res) => {
                 galleryPassword = passData.galleryPassword || null;
               }
             } catch (e) {
-              // Ignore errors reading metadata
+              console.log('[DEBUG] Error reading local metadata for', folder);
             }
-            
-            // Count images in R2
-            const imageListCmd = new ListObjectsV2Command({
-              Bucket: process.env.R2_BUCKET_NAME,
-              Prefix: folderPath,
-            });
-            const imageResponse = await s3Client.send(imageListCmd);
-            const imageCount = imageResponse.Contents 
-              ? imageResponse.Contents.filter(obj => EVENT_IMAGE_EXTS.includes(path.extname(obj.Key).toLowerCase())).length
-              : 0;
-            
+
+            const images = fs.readdirSync(eventDir)
+              .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()))
+              .length;
+
             events.push({
               slug: folder,
               name: meta.name || folder.replace(/[-_]/g, ' '),
@@ -529,58 +832,8 @@ app.get('/api/admin/events', async (req, res) => {
               location: meta.location || null,
               uploadPassword: password ? '***' : null,
               galleryPassword: galleryPassword ? '***' : null,
-              photoCount: imageCount,
+              photoCount: images,
             });
-          }
-        }
-        
-        console.log('[DEBUG] R2 events found:', events.length);
-        
-        // If no events in R2, also check local filesystem
-        if (events.length === 0) {
-          const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
-          if (fs.existsSync(eventsDir)) {
-            const folders = fs.readdirSync(eventsDir).filter(f => {
-              const fullPath = path.join(eventsDir, f);
-              return fs.statSync(fullPath).isDirectory();
-            });
-            
-            for (const folder of folders) {
-              const eventDir = path.join(eventsDir, folder);
-              const metaFile = path.join(eventDir, 'meta.json');
-              const passFile = path.join(eventDir, 'pass.json');
-
-              let meta = {};
-              let password = null;
-              let galleryPassword = null;
-
-              try {
-                if (fs.existsSync(metaFile)) {
-                  meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
-                }
-                if (fs.existsSync(passFile)) {
-                  const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
-                  password = passData.password || null;
-                  galleryPassword = passData.galleryPassword || null;
-                }
-              } catch (e) {
-                // Ignore errors
-              }
-
-              const images = fs.readdirSync(eventDir)
-                .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()))
-                .length;
-
-              events.push({
-                slug: folder,
-                name: meta.name || folder.replace(/[-_]/g, ' '),
-                date: meta.date || null,
-                location: meta.location || null,
-                uploadPassword: password ? '***' : null,
-                galleryPassword: galleryPassword ? '***' : null,
-                photoCount: images,
-              });
-            }
           }
         }
         
@@ -702,7 +955,7 @@ app.get('/api/admin/events', async (req, res) => {
 });
 
 // Create new event (API)
-app.post('/api/admin/create-event', (req, res) => {
+app.post('/api/admin/create-event', async (req, res) => {
   const { name, uploadPassword, galleryPassword, date, location } = req.body;
 
   if (!name || !uploadPassword) {
@@ -730,10 +983,10 @@ app.post('/api/admin/create-event', (req, res) => {
   }
 
   try {
-    // Create event directory
+    // Create event directory locally (for backward compatibility)
     fs.mkdirSync(eventDir, { recursive: true });
 
-    // Save metadata
+    // Save metadata locally
     const meta = {
       name,
       date: date || null,
@@ -742,12 +995,39 @@ app.post('/api/admin/create-event', (req, res) => {
     };
     fs.writeFileSync(path.join(eventDir, 'meta.json'), JSON.stringify(meta, null, 2));
 
-    // Save passwords
+    // Save passwords locally
     const passData = {
       password: uploadPassword,
       galleryPassword: galleryPassword || null,
     };
     fs.writeFileSync(path.join(eventDir, 'pass.json'), JSON.stringify(passData, null, 2));
+
+    // IMPORTANT: Also save metadata to R2 so it persists on Railway
+    if (useR2 && s3Client) {
+      try {
+        const metaKey = `_metadata/${slug}/meta.json`;
+        const passKey = `_metadata/${slug}/pass.json`;
+        
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: metaKey,
+          Body: JSON.stringify(meta),
+          ContentType: 'application/json',
+        }));
+        
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: passKey,
+          Body: JSON.stringify(passData),
+          ContentType: 'application/json',
+        }));
+        
+        console.log(`✅ Event metadata saved to R2: ${slug}`);
+      } catch (r2Err) {
+        console.warn('Warning: Could not save metadata to R2:', r2Err.message);
+        // Don't fail the request if R2 save fails - local storage works
+      }
+    }
 
     res.json({
       success: true,
@@ -777,23 +1057,87 @@ app.post('/api/admin/delete-event', (req, res) => {
   const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
   const eventDir = path.join(eventsDir, slug);
 
+  console.log('[DELETE] Attempting to delete event:', slug);
+  console.log('[DELETE] Looking in directory:', eventsDir);
+  console.log('[DELETE] Event path:', eventDir);
+  console.log('[DELETE] Path exists:', fs.existsSync(eventDir));
+  console.log('[DELETE] Directory contents:', fs.readdirSync(eventsDir));
+
   // Security: ensure we're not deleting outside the events directory
   if (!eventDir.startsWith(eventsDir)) {
     return res.status(400).json({ error: 'Invalid path' });
   }
 
   if (!fs.existsSync(eventDir)) {
-    return res.status(404).json({ error: 'Event not found' });
+    console.error('[DELETE] Event directory not found:', eventDir);
+    return res.status(404).json({ error: `Event folder not found: ${slug}. Available events: ${fs.readdirSync(eventsDir).join(', ')}` });
   }
 
   try {
+    // Try to remove the directory recursively
     fs.rmSync(eventDir, { recursive: true, force: true });
+    
+    // Also try to delete from R2 if enabled
+    if (useR2 && s3Client) {
+      deleteEventFromR2(slug).catch(err => {
+        console.log('[DEBUG] R2 deletion not critical, local deletion succeeded');
+      });
+    }
+    
+    console.log('[DELETE] Event deleted successfully:', slug);
     res.json({ success: true, message: 'Event deleted' });
   } catch (err) {
-    console.error('Error deleting event:', err);
-    res.status(500).json({ error: 'Failed to delete event' });
+    console.error('[DELETE] Error deleting event:', slug, err.message);
+    res.status(500).json({ error: 'Failed to delete event: ' + err.message });
   }
 });
+
+// Helper to delete event from R2
+async function deleteEventFromR2(slug) {
+  if (!s3Client) return;
+  
+  try {
+    // Delete all objects in events/{slug}/ prefix
+    const listCmd = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Prefix: `events/${slug}/`,
+    });
+    
+    const listRes = await s3Client.send(listCmd);
+    
+    if (listRes.Contents) {
+      for (const obj of listRes.Contents) {
+        const delCmd = new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: obj.Key,
+        });
+        await s3Client.send(delCmd);
+      }
+    }
+    
+    // Delete metadata folder
+    const metaListCmd = new ListObjectsV2Command({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Prefix: `_metadata/${slug}/`,
+    });
+    
+    const metaRes = await s3Client.send(metaListCmd);
+    
+    if (metaRes.Contents) {
+      for (const obj of metaRes.Contents) {
+        const delCmd = new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: obj.Key,
+        });
+        await s3Client.send(delCmd);
+      }
+    }
+    
+    console.log('[DELETE] Event deleted from R2:', slug);
+  } catch (err) {
+    console.error('[DELETE] Error deleting from R2:', err.message);
+  }
+}
 
 // ─── EVENT GALLERY ROUTES ────────────────────────────────────
 
@@ -802,6 +1146,26 @@ const EVENTS_DIR = path.join(__dirname, 'mycabina-gallery', 'events');
 function getEventDir(eventName) {
   const safe = eventName.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
   return path.join(EVENTS_DIR, safe);
+}
+
+async function getEventPasswordFromR2(eventSlug) {
+  if (!useR2 || !s3Client) return null;
+  
+  try {
+    const passKey = `_metadata/${eventSlug}/pass.json`;
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: passKey,
+    });
+    
+    const response = await s3Client.send(command);
+    const bodyText = await response.Body.transformToString();
+    const data = JSON.parse(bodyText);
+    return data.password || null;
+  } catch (err) {
+    // Not found or error
+    return null;
+  }
 }
 
 function getEventPassword(eventDir) {
@@ -854,26 +1218,49 @@ function getEventImages(eventDir, eventName) {
 }
 
 // Login POST
-app.post('/:event/login', (req, res) => {
+app.post('/:event/login', async (req, res) => {
   const { event } = req.params;
   const { password } = req.body;
   const eventDir = getEventDir(event);
   const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
-  if (!fs.existsSync(eventDir)) {
-    return res.status(404).send('Event not found');
-  }
+  try {
+    // Check if event exists and get password - check R2 first
+    let eventExists = false;
+    let correctPassword = null;
+    
+    if (useR2 && s3Client) {
+      try {
+        correctPassword = await getEventPasswordFromR2(safe);
+        eventExists = correctPassword !== null;
+      } catch (err) {
+        console.log('Event not found in R2, checking local filesystem');
+      }
+    }
+    
+    // Fall back to local filesystem
+    if (!eventExists && fs.existsSync(eventDir)) {
+      eventExists = true;
+      correctPassword = getEventPassword(eventDir);
+    }
+    
+    if (!eventExists) {
+      return res.status(404).send('Event not found');
+    }
 
-  const correctPassword = getEventPassword(eventDir);
-  if (!correctPassword) {
-    return res.status(500).send('Password not configured for this event');
-  }
+    if (!correctPassword) {
+      return res.status(500).send('Password not configured for this event');
+    }
 
-  if (password === correctPassword) {
-    req.session[`auth_${safe}`] = true;
-    return res.redirect(`/${safe}`);
-  } else {
-    return res.redirect(`/${safe}?error=1`);
+    if (password === correctPassword) {
+      req.session[`auth_${safe}`] = true;
+      return res.redirect(`/${safe}`);
+    } else {
+      return res.redirect(`/${safe}?error=1`);
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).send('Login error: ' + err.message);
   }
 });
 
@@ -887,7 +1274,7 @@ app.get('/:event/logout', (req, res) => {
 
 // Upload endpoint
 app.post('/:event/upload', (req, res, next) => {
-  upload.array('photos', 50)(req, res, (err) => {
+  upload.array('photos', 50)(req, res, async (err) => {
     if (err) {
       console.error('Multer error:', err);
       return res.status(400).json({ error: 'Upload error: ' + err.message });
@@ -896,33 +1283,51 @@ app.post('/:event/upload', (req, res, next) => {
     const { event } = req.params;
     const { password } = req.body;
     const eventDir = getEventDir(event);
+    const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
     try {
-      if (!fs.existsSync(eventDir)) {
-        // Clean up uploaded files if event doesn't exist
-        if (req.files && req.files.length > 0) {
-          if (!useR2 && req.files[0].path) {
-            // Only delete local files
-            req.files.forEach(f => {
-              try { fs.unlinkSync(f.path); } catch(e) {}
-            });
-          }
+      // Check if event exists - prioritize R2 check
+      let eventExists = false;
+      let correctPassword = null;
+      
+      if (useR2 && s3Client) {
+        // Check R2 first
+        try {
+          correctPassword = await getEventPasswordFromR2(safe);
+          eventExists = correctPassword !== null; // If password exists, event exists
+        } catch (err) {
+          console.log('Event not found in R2, checking local filesystem');
         }
-        return res.status(404).json({ error: 'Event not found' });
       }
-
-      const correctPassword = getEventPassword(eventDir);
-      if (!correctPassword || password !== correctPassword) {
-        // Clean up uploaded files if password is wrong
+      
+      // Fall back to local filesystem check
+      if (!eventExists && fs.existsSync(eventDir)) {
+        eventExists = true;
+        correctPassword = getEventPassword(eventDir);
+      }
+      
+      if (!eventExists) {
+        // Clean up uploaded files
         if (req.files && req.files.length > 0) {
           if (!useR2 && req.files[0].path) {
-            // Only delete local files
             req.files.forEach(f => {
               try { fs.unlinkSync(f.path); } catch(e) {}
             });
           }
         }
-        return res.status(401).json({ error: 'Invalid password' });
+        return res.status(404).json({ error: 'Event not found. Please check the event name or create the event first.' });
+      }
+      
+      if (!correctPassword || password !== correctPassword) {
+        // Clean up uploaded files
+        if (req.files && req.files.length > 0) {
+          if (!useR2 && req.files[0].path) {
+            req.files.forEach(f => {
+              try { fs.unlinkSync(f.path); } catch(e) {}
+            });
+          }
+        }
+        return res.status(401).json({ error: 'Invalid upload password' });
       }
 
       if (!req.files || req.files.length === 0) {
@@ -962,13 +1367,9 @@ app.post('/:event/upload', (req, res, next) => {
 });
 
 // Main event gallery route (but NOT for special routes like /api, /galerie, etc)
-app.get('/:event', (req, res, next) => {
+app.get('/:event', async (req, res, next) => {
   // Skip if it matches known routes
   if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook', 'admin', 'upload.html'].includes(req.params.event)) {
-    return next();
-  }
-  // Skip static asset requests (files with extensions like .svg, .png, .js, .css, etc.)
-  if (/\.[a-zA-Z0-9]+$/.test(req.params.event)) {
     return next();
   }
   
@@ -976,34 +1377,55 @@ app.get('/:event', (req, res, next) => {
   const eventDir = getEventDir(event);
   const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
-  if (!fs.existsSync(eventDir)) {
-    return next(); // Pass to 404 handler
-  }
-
-  const sessionKey = `auth_${safe}`;
-  const isAuthenticated = req.session[sessionKey] === true;
-  const hasError = req.query.error === '1';
-
-  if (!isAuthenticated) {
-    return res.send(renderLoginPage(safe, hasError));
-  }
-
-  // Load images from R2 if available, otherwise from disk
-  (async () => {
-    try {
-      let images;
-      if (useR2) {
-        const filenames = await getEventImagesFromR2(safe);
-        images = filenames.map(f => `/photos/${safe}/${f}`);
-      } else {
-        images = getEventImages(eventDir, safe);
+  try {
+    // Check if event exists - check R2 first, then local filesystem
+    let eventExists = false;
+    
+    if (useR2 && s3Client) {
+      try {
+        const password = await getEventPasswordFromR2(safe);
+        eventExists = password !== null;
+      } catch (err) {
+        console.log('Event not found in R2');
       }
-      return res.send(renderGalleryPage(safe, images));
-    } catch (err) {
-      console.error('Error loading gallery:', err);
-      return res.send(renderGalleryPage(safe, []));
     }
-  })();
+    
+    if (!eventExists && fs.existsSync(eventDir)) {
+      eventExists = true;
+    }
+    
+    if (!eventExists) {
+      return next(); // Pass to 404 handler
+    }
+
+    const sessionKey = `auth_${safe}`;
+    const isAuthenticated = req.session[sessionKey] === true;
+    const hasError = req.query.error === '1';
+
+    if (!isAuthenticated) {
+      return res.send(renderLoginPage(safe, hasError));
+    }
+
+    // Load images from R2 if available, otherwise from disk
+    (async () => {
+      try {
+        let images;
+        if (useR2) {
+          const filenames = await getEventImagesFromR2(safe);
+          images = filenames.map(f => `/photos/${safe}/${f}`);
+        } else {
+          images = getEventImages(eventDir, safe);
+        }
+        return res.send(renderGalleryPage(safe, images));
+      } catch (err) {
+        console.error('Error loading gallery:', err);
+        return res.send(renderGalleryPage(safe, []));
+      }
+    })();
+  } catch (err) {
+    console.error('Gallery route error:', err);
+    return next();
+  }
 });
 
 function renderLoginPage(eventName, hasError) {
@@ -1070,12 +1492,11 @@ function renderLoginPage(eventName, hasError) {
     }
     .login-logo a {
       text-decoration: none;
-      display: inline-block;
-    }
-    .login-logo img {
-      height: 56px;
-      width: auto;
-      display: block;
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--brown);
+      letter-spacing: .04em;
     }
     .login-card {
       background: #fff;
@@ -1186,7 +1607,7 @@ function renderLoginPage(eventName, hasError) {
 <body>
   <div class="login-wrap">
     <div class="login-logo">
-      <a href="https://mycabina.com"><img src="/MyCabina.svg" alt="MyCabina"/></a>
+      <a href="https://mycabina.com">MyCabina</a>
     </div>
     <div class="login-card">
       <div class="lock-icon">
@@ -1280,14 +1701,20 @@ function renderGalleryPage(eventName, images) {
       justify-content: space-between;
     }
     .header-logo {
-      text-decoration: none;
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      gap: 1rem;
+      text-decoration: none;
     }
-    .header-logo img {
-      height: 36px;
-      width: auto;
-      display: block;
+    .header-logo svg {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      flex-shrink: 0;
+      transition: opacity .2s;
+    }
+    .header-logo:hover svg {
+      opacity: .8;
     }
     .header-right {
       display: flex;
@@ -1311,6 +1738,36 @@ function renderGalleryPage(eventName, images) {
       transition: all .2s;
     }
     .btn-logout:hover { color: var(--brown); border-color: var(--brown-pale); }
+    .lb-social {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .lb-share-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(107,62,29,.8);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+      text-decoration: none;
+    }
+    .lb-share-btn:hover {
+      background: rgba(139,90,43,.9);
+      transform: scale(1.1);
+    }
+    .lb-share-btn svg {
+      width: 18px;
+      height: 18px;
+    }
     .gallery-hero {
       position: relative;
       z-index: 1;
@@ -1459,7 +1916,17 @@ function renderGalleryPage(eventName, images) {
 </head>
 <body>
 <header>
-  <a href="https://mycabina.com" class="header-logo"><img src="/MyCabina.svg" alt="MyCabina"/></a>
+  <a href="https://mycabina.com" class="header-logo" title="MyCabina">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5"/>
+      <circle cx="12" cy="12" r="3.5"/>
+      <circle cx="17.5" cy="6.5" r="1" fill="#6b3e1d"/>
+    </svg>
+    <svg viewBox="0 0 24 24" fill="#6b3e1d">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#6b3e1d" stroke-width="1.5"/>
+      <path d="M12 8v8m4-4h-8" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
     <a href="/${eventName}/logout" class="btn-logout">Ieși</a>
@@ -1486,6 +1953,20 @@ ${images.length > 0 ? `
   <button class="lb-nav lb-prev" onclick="changeSlide(-1)">‹</button>
   ${lightboxImgs}
   <button class="lb-nav lb-next" onclick="changeSlide(1)">›</button>
+  <div class="lb-social" id="lb-social">
+    <button class="lb-share-btn" onclick="shareToInstagram()" title="Add to Instagram Story">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="2" width="20" height="20" rx="5"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+      </svg>
+    </button>
+    <button class="lb-share-btn" onclick="shareToFacebook()" title="Add to Facebook Story">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    </button>
+  </div>
   <div class="lb-counter" id="lb-counter">1 / ${images.length}</div>
 </div>
 <footer>
@@ -1526,6 +2007,19 @@ ${images.length > 0 ? `
     const dx = e.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
   });
+  
+  function shareToInstagram() {
+    const instagramUrl = 'instagram://share?url=' + encodeURIComponent(window.location.href);
+    window.location.href = instagramUrl;
+    setTimeout(() => {
+      window.open('https://www.instagram.com/', '_blank');
+    }, 1000);
+  }
+  
+  function shareToFacebook() {
+    const facebookShareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
+    window.open(facebookShareUrl, 'facebook-share-dialog', 'width=626,height=436');
+  }
 </script>
 </body>
 </html>`;
