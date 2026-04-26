@@ -846,6 +846,30 @@ nav.scrolled {
       opacity: .4
     }
 
+    .mosaic-cell-logo {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--brown-pale) 0%, var(--cream-dark) 100%);
+      padding: 1.5rem;
+    }
+
+    .mosaic-cell-logo .logo-img {
+      max-width: 80%;
+      max-height: 80%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      opacity: 0.6;
+      transition: opacity .3s ease;
+    }
+
+    .mosaic-cell:hover .logo-img {
+      opacity: 0.85;
+    }
+
     .mosaic-cell img {
       width: 100%;
       height: 100%;
@@ -2213,20 +2237,14 @@ nav.scrolled {
       <div class="gallery-mosaic">
         <div class="mosaic-cell"><img src="./hero.png" alt="Cabina foto MyCabina" /></div>
         <div class="mosaic-cell">
-          <div class="mosaic-cell-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg><span>Foto invitat</span></div>
+          <div class="mosaic-cell-logo">
+            <img src="./doarcabina.svg" alt="MyCabina Logo" class="logo-img" />
+          </div>
         </div>
         <div class="mosaic-cell">
-          <div class="mosaic-cell-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="M21 15l-5-5L5 21" />
-            </svg><span>Foto invitat</span></div>
+          <div class="mosaic-cell-logo">
+            <img src="./mycabinatext.svg" alt="MyCabina Text" class="logo-img" />
+          </div>
         </div>
       </div>
     </div>
