@@ -198,14 +198,14 @@ function renderLoginPage(eventName, hasError) {
     .login-logo {
       text-align: center;
       margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .login-logo a {
-      text-decoration: none;
-      font-family: var(--serif);
-      font-size: 2rem;
-      font-weight: 300;
-      color: var(--brown);
-      letter-spacing: .04em;
+    .login-logo img {
+      max-height: 80px;
+      width: auto;
+      margin-bottom: 1rem;
     }
     .login-card {
       background: #fff;
@@ -408,8 +408,9 @@ function renderGalleryPage(eventName, images) {
     .header-logo {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
+      gap: 0;
       text-decoration: none;
+      flex-shrink: 0;
     }
     .header-logo img {
       height: 40px;
@@ -577,6 +578,19 @@ function renderGalleryPage(eventName, images) {
       backdrop-filter: blur(8px);
     }
     .lightbox.open { display: flex; }
+    
+    /* Ensure social buttons are hidden when lightbox is not open */
+    .lb-social {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      display: none;
+      align-items: center;
+      gap: .8rem;
+    }
+    .lightbox.open .lb-social {
+      display: flex;
+    }
     .lb-slide { display: none; max-width: 90vw; max-height: 90dvh; }
     .lb-slide.active { display: flex; align-items: center; justify-content: center; }
     .lb-slide img { max-width: 90vw; max-height: 90dvh; object-fit: contain; border-radius: 2px; }
@@ -637,16 +651,7 @@ function renderGalleryPage(eventName, images) {
     }
     .lb-download:hover { background: rgba(139,90,43,.9); }
     .lb-download svg { width: 13px; height: 13px; }
-
-    /* SOCIAL SHARE */
-    .lb-social {
-      position: fixed;
-      bottom: 1.5rem;
-      left: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: .8rem;
-    }
+    
     .lb-share-btn {
       display: inline-flex;
       align-items: center;
