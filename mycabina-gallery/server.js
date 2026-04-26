@@ -312,14 +312,7 @@ function renderLoginPage(eventName, hasError) {
 <body>
   <div class="login-wrap">
     <div class="login-logo">
-      <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#6b3e1d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 48px; height: 48px;">
-          <rect x="2" y="2" width="20" height="20" rx="5"/>
-          <circle cx="12" cy="12" r="3.5"/>
-          <circle cx="17.5" cy="6.5" r="1" fill="#6b3e1d"/>
-        </svg>
-        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.8rem; font-weight: 300; color: #6b3e1d; letter-spacing: 0.04em;">MyCabina</span>
-      </div>
+      <img src="../../MyCabina.svg" alt="MyCabina" style="max-height: 80px; width: auto; margin-bottom: 1rem;" />
     </div>
     <div class="login-card">
       <p class="event-tag">Galerie privată</p>
@@ -415,24 +408,12 @@ function renderGalleryPage(eventName, images) {
       text-decoration: none;
     }
     .header-logo img {
-      height: 32px;
+      height: 40px;
       width: auto;
-      max-width: 100px;
+      max-width: 150px;
       display: block;
       flex-shrink: 0;
-    }
-    .header-logo .logo-icon {
-      height: 32px;
-      width: auto;
-      display: block;
-      flex-shrink: 0;
-    }
-    .header-logo .logo-text {
-      height: 32px;
-      width: auto;
-      display: block;
-      flex-shrink: 0;
-      margin-left: -8px;
+      transition: opacity .2s;
     }
     .header-logo:hover img {
       opacity: .8;
@@ -714,8 +695,7 @@ function renderGalleryPage(eventName, images) {
 
 <header>
   <a href="https://mycabina.com" class="header-logo" title="MyCabina">
-    <img src="../../doarcabina.svg" alt="MyCabina icon" class="logo-icon" />
-    <img src="../../mycabinatext.svg" alt="MyCabina" class="logo-text" />
+    <img src="../../MyCabina.svg" alt="MyCabina" style="max-height: 40px; width: auto;" />
   </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
