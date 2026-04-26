@@ -28,6 +28,9 @@ Example:
 
 const [folderPath, eventName, password, serverUrl] = args;
 
+// Remove trailing slash from serverUrl if present
+const cleanServerUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
+
 // Expand home directory
 const fullPath = folderPath.startsWith('~') 
   ? path.join(process.env.HOME || process.env.USERPROFILE, folderPath.slice(1))
@@ -44,7 +47,7 @@ console.log(`
 📁 Folder: ${fullPath}
 🎉 Event: ${eventName}
 🔒 Password: ${password.replace(/./g, '*')}
-🌐 Server: ${serverUrl}
+🌐 Server: ${cleanServerUrl}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Watching for new photos... (Ctrl+C to stop)
@@ -75,7 +78,7 @@ async function uploadFiles(filePaths) {
   formData.append('event', eventName);
 
   try {
-    const res = await fetch(`${serverUrl}/${eventName}/upload`, {
+    const res = await fetch(`${cleanServerUrl}/${eventName}/upload`, {
       method: 'POST',
       body: formData,
       headers: formData.getHeaders()
