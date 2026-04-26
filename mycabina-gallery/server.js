@@ -416,6 +416,8 @@ function renderGalleryPage(eventName, images) {
     .header-logo svg {
       width: 32px;
       height: 32px;
+      min-width: 32px;
+      flex-shrink: 0;
       transition: opacity .2s;
     }
     .header-logo:hover svg {

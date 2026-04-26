@@ -958,14 +958,18 @@ node photo-uploader.js ~/Pictures/MyEvent event-name password-123 https://mycabi
           body: JSON.stringify({ slug }),
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-          showAlert('✓ Event deleted', 'success');
+          showAlert('✓ Event deleted successfully', 'success');
           loadEvents();
         } else {
-          showAlert('Failed to delete event', 'error');
+          console.error('[DELETE] Error:', data);
+          showAlert(`Failed to delete event: ${data.error || 'Unknown error'}`, 'error');
         }
       } catch (err) {
-        showAlert('Network error', 'error');
+        console.error('[DELETE] Network error:', err);
+        showAlert(`Network error: ${err.message}`, 'error');
       }
     }
 
