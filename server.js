@@ -475,11 +475,11 @@ app.get('/api/admin/events', async (req, res) => {
     console.log('[DEBUG] /api/admin/events called, useR2:', !!useR2);
     
     if (useR2 && s3Client) {
-      // List events from R2
+      // List events from R2 _metadata folder
       try {
         const command = new ListObjectsV2Command({
           Bucket: process.env.R2_BUCKET_NAME,
-          Prefix: 'events/',
+          Prefix: '_metadata/',
           Delimiter: '/',
         });
         
@@ -489,17 +489,100 @@ app.get('/api/admin/events', async (req, res) => {
         if (response.CommonPrefixes) {
           for (const prefix of response.CommonPrefixes) {
             const folderPath = prefix.Prefix;
-            const folder = folderPath.split('/')[1];
+            const slug = folderPath.split('/')[1];
             
-            // Get metadata from filesystem if available
-            const eventDir = path.join(__dirname, 'mycabina-gallery', 'events', folder);
+            // Get metadata from R2
             let meta = {};
             let password = null;
             let galleryPassword = null;
             
             try {
-              const metaFile = path.join(eventDir, 'meta.json');
-              const passFile = path.join(eventDir, 'pass.json');
+              // Try to get meta.json from R2
+              const metaKey = `_metadata/${slug}/meta.json`;
+              const metaCmd = new GetObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: metaKey,
+              });
+              
+              const metaResponse = await s3Client.send(metaCmd);
+              const metaText = await metaResponse.Body.transformToString();
+              meta = JSON.parse(metaText);
+              
+              // Try to get pass.json from R2
+              const passKey = `_metadata/${slug}/pass.json`;
+              const passCmd = new GetObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: passKey,
+              });
+              
+              const passResponse = await s3Client.send(passCmd);
+              const passText = await passResponse.Body.transformToString();
+              const passData = JSON.parse(passText);
+              password = passData.password || null;
+              galleryPassword = passData.galleryPassword || null;
+            } catch (e) {
+              console.log('[DEBUG] Could not read metadata for', slug, ':', e.message);
+            }
+            
+            // Count images in R2
+            const imageListCmd = new ListObjectsV2Command({
+              Bucket: process.env.R2_BUCKET_NAME,
+              Prefix: `events/${slug}/`,
+            });
+            
+            try {
+              const imageResponse = await s3Client.send(imageListCmd);
+              const imageCount = imageResponse.Contents 
+                ? imageResponse.Contents.filter(obj => EVENT_IMAGE_EXTS.includes(path.extname(obj.Key).toLowerCase())).length
+                : 0;
+              
+              events.push({
+                slug: slug,
+                name: meta.name || slug.replace(/[-_]/g, ' '),
+                date: meta.date || null,
+                location: meta.location || null,
+                uploadPassword: password ? '***' : null,
+                galleryPassword: galleryPassword ? '***' : null,
+                photoCount: imageCount,
+              });
+            } catch (imgErr) {
+              console.log('[DEBUG] Could not count images for', slug);
+              events.push({
+                slug: slug,
+                name: meta.name || slug.replace(/[-_]/g, ' '),
+                date: meta.date || null,
+                location: meta.location || null,
+                uploadPassword: password ? '***' : null,
+                galleryPassword: galleryPassword ? '***' : null,
+                photoCount: 0,
+              });
+            }
+          }
+        }
+        
+        console.log('[DEBUG] R2 events found:', events.length);
+        
+        // Also check local filesystem for any local-only events
+        const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
+        if (fs.existsSync(eventsDir)) {
+          const folders = fs.readdirSync(eventsDir).filter(f => {
+            const fullPath = path.join(eventsDir, f);
+            return fs.statSync(fullPath).isDirectory();
+          });
+          
+          for (const folder of folders) {
+            // Skip if already in R2 events
+            if (events.find(e => e.slug === folder)) continue;
+            
+            const eventDir = path.join(eventsDir, folder);
+            const metaFile = path.join(eventDir, 'meta.json');
+            const passFile = path.join(eventDir, 'pass.json');
+
+            let meta = {};
+            let password = null;
+            let galleryPassword = null;
+
+            try {
               if (fs.existsSync(metaFile)) {
                 meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
               }
@@ -509,19 +592,13 @@ app.get('/api/admin/events', async (req, res) => {
                 galleryPassword = passData.galleryPassword || null;
               }
             } catch (e) {
-              // Ignore errors reading metadata
+              console.log('[DEBUG] Error reading local metadata for', folder);
             }
-            
-            // Count images in R2
-            const imageListCmd = new ListObjectsV2Command({
-              Bucket: process.env.R2_BUCKET_NAME,
-              Prefix: folderPath,
-            });
-            const imageResponse = await s3Client.send(imageListCmd);
-            const imageCount = imageResponse.Contents 
-              ? imageResponse.Contents.filter(obj => EVENT_IMAGE_EXTS.includes(path.extname(obj.Key).toLowerCase())).length
-              : 0;
-            
+
+            const images = fs.readdirSync(eventDir)
+              .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()))
+              .length;
+
             events.push({
               slug: folder,
               name: meta.name || folder.replace(/[-_]/g, ' '),
@@ -529,58 +606,8 @@ app.get('/api/admin/events', async (req, res) => {
               location: meta.location || null,
               uploadPassword: password ? '***' : null,
               galleryPassword: galleryPassword ? '***' : null,
-              photoCount: imageCount,
+              photoCount: images,
             });
-          }
-        }
-        
-        console.log('[DEBUG] R2 events found:', events.length);
-        
-        // If no events in R2, also check local filesystem
-        if (events.length === 0) {
-          const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
-          if (fs.existsSync(eventsDir)) {
-            const folders = fs.readdirSync(eventsDir).filter(f => {
-              const fullPath = path.join(eventsDir, f);
-              return fs.statSync(fullPath).isDirectory();
-            });
-            
-            for (const folder of folders) {
-              const eventDir = path.join(eventsDir, folder);
-              const metaFile = path.join(eventDir, 'meta.json');
-              const passFile = path.join(eventDir, 'pass.json');
-
-              let meta = {};
-              let password = null;
-              let galleryPassword = null;
-
-              try {
-                if (fs.existsSync(metaFile)) {
-                  meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
-                }
-                if (fs.existsSync(passFile)) {
-                  const passData = JSON.parse(fs.readFileSync(passFile, 'utf8'));
-                  password = passData.password || null;
-                  galleryPassword = passData.galleryPassword || null;
-                }
-              } catch (e) {
-                // Ignore errors
-              }
-
-              const images = fs.readdirSync(eventDir)
-                .filter(f => EVENT_IMAGE_EXTS.includes(path.extname(f).toLowerCase()))
-                .length;
-
-              events.push({
-                slug: folder,
-                name: meta.name || folder.replace(/[-_]/g, ' '),
-                date: meta.date || null,
-                location: meta.location || null,
-                uploadPassword: password ? '***' : null,
-                galleryPassword: galleryPassword ? '***' : null,
-                photoCount: images,
-              });
-            }
           }
         }
         
@@ -702,7 +729,7 @@ app.get('/api/admin/events', async (req, res) => {
 });
 
 // Create new event (API)
-app.post('/api/admin/create-event', (req, res) => {
+app.post('/api/admin/create-event', async (req, res) => {
   const { name, uploadPassword, galleryPassword, date, location } = req.body;
 
   if (!name || !uploadPassword) {
@@ -730,10 +757,10 @@ app.post('/api/admin/create-event', (req, res) => {
   }
 
   try {
-    // Create event directory
+    // Create event directory locally (for backward compatibility)
     fs.mkdirSync(eventDir, { recursive: true });
 
-    // Save metadata
+    // Save metadata locally
     const meta = {
       name,
       date: date || null,
@@ -742,12 +769,39 @@ app.post('/api/admin/create-event', (req, res) => {
     };
     fs.writeFileSync(path.join(eventDir, 'meta.json'), JSON.stringify(meta, null, 2));
 
-    // Save passwords
+    // Save passwords locally
     const passData = {
       password: uploadPassword,
       galleryPassword: galleryPassword || null,
     };
     fs.writeFileSync(path.join(eventDir, 'pass.json'), JSON.stringify(passData, null, 2));
+
+    // IMPORTANT: Also save metadata to R2 so it persists on Railway
+    if (useR2 && s3Client) {
+      try {
+        const metaKey = `_metadata/${slug}/meta.json`;
+        const passKey = `_metadata/${slug}/pass.json`;
+        
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: metaKey,
+          Body: JSON.stringify(meta),
+          ContentType: 'application/json',
+        }));
+        
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: passKey,
+          Body: JSON.stringify(passData),
+          ContentType: 'application/json',
+        }));
+        
+        console.log(`✅ Event metadata saved to R2: ${slug}`);
+      } catch (r2Err) {
+        console.warn('Warning: Could not save metadata to R2:', r2Err.message);
+        // Don't fail the request if R2 save fails - local storage works
+      }
+    }
 
     res.json({
       success: true,
@@ -804,6 +858,26 @@ function getEventDir(eventName) {
   return path.join(EVENTS_DIR, safe);
 }
 
+async function getEventPasswordFromR2(eventSlug) {
+  if (!useR2 || !s3Client) return null;
+  
+  try {
+    const passKey = `_metadata/${eventSlug}/pass.json`;
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: passKey,
+    });
+    
+    const response = await s3Client.send(command);
+    const bodyText = await response.Body.transformToString();
+    const data = JSON.parse(bodyText);
+    return data.password || null;
+  } catch (err) {
+    // Not found or error
+    return null;
+  }
+}
+
 function getEventPassword(eventDir) {
   const passFile = path.join(eventDir, 'pass.json');
   if (!fs.existsSync(passFile)) return null;
@@ -854,26 +928,49 @@ function getEventImages(eventDir, eventName) {
 }
 
 // Login POST
-app.post('/:event/login', (req, res) => {
+app.post('/:event/login', async (req, res) => {
   const { event } = req.params;
   const { password } = req.body;
   const eventDir = getEventDir(event);
   const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
-  if (!fs.existsSync(eventDir)) {
-    return res.status(404).send('Event not found');
-  }
+  try {
+    // Check if event exists and get password - check R2 first
+    let eventExists = false;
+    let correctPassword = null;
+    
+    if (useR2 && s3Client) {
+      try {
+        correctPassword = await getEventPasswordFromR2(safe);
+        eventExists = correctPassword !== null;
+      } catch (err) {
+        console.log('Event not found in R2, checking local filesystem');
+      }
+    }
+    
+    // Fall back to local filesystem
+    if (!eventExists && fs.existsSync(eventDir)) {
+      eventExists = true;
+      correctPassword = getEventPassword(eventDir);
+    }
+    
+    if (!eventExists) {
+      return res.status(404).send('Event not found');
+    }
 
-  const correctPassword = getEventPassword(eventDir);
-  if (!correctPassword) {
-    return res.status(500).send('Password not configured for this event');
-  }
+    if (!correctPassword) {
+      return res.status(500).send('Password not configured for this event');
+    }
 
-  if (password === correctPassword) {
-    req.session[`auth_${safe}`] = true;
-    return res.redirect(`/${safe}`);
-  } else {
-    return res.redirect(`/${safe}?error=1`);
+    if (password === correctPassword) {
+      req.session[`auth_${safe}`] = true;
+      return res.redirect(`/${safe}`);
+    } else {
+      return res.redirect(`/${safe}?error=1`);
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).send('Login error: ' + err.message);
   }
 });
 
@@ -887,7 +984,7 @@ app.get('/:event/logout', (req, res) => {
 
 // Upload endpoint
 app.post('/:event/upload', (req, res, next) => {
-  upload.array('photos', 50)(req, res, (err) => {
+  upload.array('photos', 50)(req, res, async (err) => {
     if (err) {
       console.error('Multer error:', err);
       return res.status(400).json({ error: 'Upload error: ' + err.message });
@@ -896,33 +993,51 @@ app.post('/:event/upload', (req, res, next) => {
     const { event } = req.params;
     const { password } = req.body;
     const eventDir = getEventDir(event);
+    const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
     try {
-      if (!fs.existsSync(eventDir)) {
-        // Clean up uploaded files if event doesn't exist
-        if (req.files && req.files.length > 0) {
-          if (!useR2 && req.files[0].path) {
-            // Only delete local files
-            req.files.forEach(f => {
-              try { fs.unlinkSync(f.path); } catch(e) {}
-            });
-          }
+      // Check if event exists - prioritize R2 check
+      let eventExists = false;
+      let correctPassword = null;
+      
+      if (useR2 && s3Client) {
+        // Check R2 first
+        try {
+          correctPassword = await getEventPasswordFromR2(safe);
+          eventExists = correctPassword !== null; // If password exists, event exists
+        } catch (err) {
+          console.log('Event not found in R2, checking local filesystem');
         }
-        return res.status(404).json({ error: 'Event not found' });
       }
-
-      const correctPassword = getEventPassword(eventDir);
-      if (!correctPassword || password !== correctPassword) {
-        // Clean up uploaded files if password is wrong
+      
+      // Fall back to local filesystem check
+      if (!eventExists && fs.existsSync(eventDir)) {
+        eventExists = true;
+        correctPassword = getEventPassword(eventDir);
+      }
+      
+      if (!eventExists) {
+        // Clean up uploaded files
         if (req.files && req.files.length > 0) {
           if (!useR2 && req.files[0].path) {
-            // Only delete local files
             req.files.forEach(f => {
               try { fs.unlinkSync(f.path); } catch(e) {}
             });
           }
         }
-        return res.status(401).json({ error: 'Invalid password' });
+        return res.status(404).json({ error: 'Event not found. Please check the event name or create the event first.' });
+      }
+      
+      if (!correctPassword || password !== correctPassword) {
+        // Clean up uploaded files
+        if (req.files && req.files.length > 0) {
+          if (!useR2 && req.files[0].path) {
+            req.files.forEach(f => {
+              try { fs.unlinkSync(f.path); } catch(e) {}
+            });
+          }
+        }
+        return res.status(401).json({ error: 'Invalid upload password' });
       }
 
       if (!req.files || req.files.length === 0) {
@@ -962,7 +1077,7 @@ app.post('/:event/upload', (req, res, next) => {
 });
 
 // Main event gallery route (but NOT for special routes like /api, /galerie, etc)
-app.get('/:event', (req, res, next) => {
+app.get('/:event', async (req, res, next) => {
   // Skip if it matches known routes
   if (['api', 'galerie', 'galerii', 'photos', 'health', 'index', 'rezervare', 'guestbook', 'admin', 'upload.html'].includes(req.params.event)) {
     return next();
@@ -972,34 +1087,55 @@ app.get('/:event', (req, res, next) => {
   const eventDir = getEventDir(event);
   const safe = event.replace(/[^a-zA-Z0-9\-_]/g, '-').toLowerCase().replace(/^-+|-+$/g, '');
 
-  if (!fs.existsSync(eventDir)) {
-    return next(); // Pass to 404 handler
-  }
-
-  const sessionKey = `auth_${safe}`;
-  const isAuthenticated = req.session[sessionKey] === true;
-  const hasError = req.query.error === '1';
-
-  if (!isAuthenticated) {
-    return res.send(renderLoginPage(safe, hasError));
-  }
-
-  // Load images from R2 if available, otherwise from disk
-  (async () => {
-    try {
-      let images;
-      if (useR2) {
-        const filenames = await getEventImagesFromR2(safe);
-        images = filenames.map(f => `/photos/${safe}/${f}`);
-      } else {
-        images = getEventImages(eventDir, safe);
+  try {
+    // Check if event exists - check R2 first, then local filesystem
+    let eventExists = false;
+    
+    if (useR2 && s3Client) {
+      try {
+        const password = await getEventPasswordFromR2(safe);
+        eventExists = password !== null;
+      } catch (err) {
+        console.log('Event not found in R2');
       }
-      return res.send(renderGalleryPage(safe, images));
-    } catch (err) {
-      console.error('Error loading gallery:', err);
-      return res.send(renderGalleryPage(safe, []));
     }
-  })();
+    
+    if (!eventExists && fs.existsSync(eventDir)) {
+      eventExists = true;
+    }
+    
+    if (!eventExists) {
+      return next(); // Pass to 404 handler
+    }
+
+    const sessionKey = `auth_${safe}`;
+    const isAuthenticated = req.session[sessionKey] === true;
+    const hasError = req.query.error === '1';
+
+    if (!isAuthenticated) {
+      return res.send(renderLoginPage(safe, hasError));
+    }
+
+    // Load images from R2 if available, otherwise from disk
+    (async () => {
+      try {
+        let images;
+        if (useR2) {
+          const filenames = await getEventImagesFromR2(safe);
+          images = filenames.map(f => `/photos/${safe}/${f}`);
+        } else {
+          images = getEventImages(eventDir, safe);
+        }
+        return res.send(renderGalleryPage(safe, images));
+      } catch (err) {
+        console.error('Error loading gallery:', err);
+        return res.send(renderGalleryPage(safe, []));
+      }
+    })();
+  } catch (err) {
+    console.error('Gallery route error:', err);
+    return next();
+  }
 });
 
 function renderLoginPage(eventName, hasError) {
