@@ -7,6 +7,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const EVENTS_DIR = path.join(__dirname, 'events');
 
+// Read SVG file at startup (for reliability)
+let SVG_CONTENT = null;
+const svgPath = path.join(__dirname, 'MyCabina.svg');
+if (fs.existsSync(svgPath)) {
+  SVG_CONTENT = fs.readFileSync(svgPath, 'utf8');
+  console.log('✓ MyCabina.svg loaded successfully');
+} else {
+  console.warn('⚠ MyCabina.svg not found at:', svgPath);
+}
+
 // Supported image extensions
 const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif'];
 
@@ -14,9 +24,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve SVG logo
+// Serve SVG logo (from memory for reliability)
 app.get('/MyCabina.svg', (req, res) => {
-  res.sendFile(path.join(__dirname, 'MyCabina.svg'));
+  if (SVG_CONTENT) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(SVG_CONTENT);
+  } else {
+    console.error('SVG not loaded - check that MyCabina.svg exists');
+    res.status(404).send('SVG file not found');
+  }
 });
 
 // Serve event images statically (no auth needed on static route)
@@ -24,7 +41,12 @@ app.use('/photos', express.static(EVENTS_DIR));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', eventDir: EVENTS_DIR });
+  res.json({ 
+    status: 'ok', 
+    eventDir: EVENTS_DIR,
+    svgLoaded: SVG_CONTENT ? 'YES ✓' : 'NO - check MyCabina.svg exists',
+    svgSize: SVG_CONTENT ? (SVG_CONTENT.length / 1024).toFixed(2) + ' KB' : 'N/A'
+  });
 });
 
 // Debug: list events
