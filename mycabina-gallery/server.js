@@ -14,6 +14,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve logo files from parent directory
+app.use('/logos', express.static(path.join(__dirname, '..')));
+
 // Serve event images statically (no auth needed on static route)
 app.use('/photos', express.static(EVENTS_DIR));
 
@@ -312,7 +315,7 @@ function renderLoginPage(eventName, hasError) {
 <body>
   <div class="login-wrap">
     <div class="login-logo">
-      <img src="../../MyCabina.svg" alt="MyCabina" style="max-height: 80px; width: auto; margin-bottom: 1rem;" />
+      <img src="/logos/MyCabina.svg" alt="MyCabina" style="max-height: 80px; width: auto; margin-bottom: 1rem;" />
     </div>
     <div class="login-card">
       <p class="event-tag">Galerie privată</p>
@@ -695,7 +698,7 @@ function renderGalleryPage(eventName, images) {
 
 <header>
   <a href="https://mycabina.com" class="header-logo" title="MyCabina">
-    <img src="../../MyCabina.svg" alt="MyCabina" style="max-height: 40px; width: auto;" />
+    <img src="/logos/MyCabina.svg" alt="MyCabina" style="max-height: 40px; width: auto;" />
   </a>
   <div class="header-right">
     <span class="photo-count">${images.length} fotografii</span>
