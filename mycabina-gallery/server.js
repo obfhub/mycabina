@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001; // Gallery on port 3001
 const EVENTS_DIR = path.join(__dirname, 'events');
 
 // Supported image extensions

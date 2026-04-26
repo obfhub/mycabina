@@ -1057,13 +1057,20 @@ app.post('/api/admin/delete-event', (req, res) => {
   const eventsDir = path.join(__dirname, 'mycabina-gallery', 'events');
   const eventDir = path.join(eventsDir, slug);
 
+  console.log('[DELETE] Attempting to delete event:', slug);
+  console.log('[DELETE] Looking in directory:', eventsDir);
+  console.log('[DELETE] Event path:', eventDir);
+  console.log('[DELETE] Path exists:', fs.existsSync(eventDir));
+  console.log('[DELETE] Directory contents:', fs.readdirSync(eventsDir));
+
   // Security: ensure we're not deleting outside the events directory
   if (!eventDir.startsWith(eventsDir)) {
     return res.status(400).json({ error: 'Invalid path' });
   }
 
   if (!fs.existsSync(eventDir)) {
-    return res.status(404).json({ error: 'Event not found' });
+    console.error('[DELETE] Event directory not found:', eventDir);
+    return res.status(404).json({ error: `Event folder not found: ${slug}. Available events: ${fs.readdirSync(eventsDir).join(', ')}` });
   }
 
   try {
@@ -1077,7 +1084,7 @@ app.post('/api/admin/delete-event', (req, res) => {
       });
     }
     
-    console.log('[DELETE] Event deleted:', slug);
+    console.log('[DELETE] Event deleted successfully:', slug);
     res.json({ success: true, message: 'Event deleted' });
   } catch (err) {
     console.error('[DELETE] Error deleting event:', slug, err.message);
